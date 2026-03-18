@@ -162,10 +162,15 @@ var pagina = await client.Notifications.GetListAsync(new GetNotificationsRequest
     MaxResultCount = 20
 });
 
+// GetListAsync retorna PagedResult<NotificationWithDetailsResponse>
+// Cada item contiene la notificación y sus datos relacionados expandidos
 Console.WriteLine($"Total: {pagina.TotalCount}");
-foreach (var notif in pagina.Items)
+foreach (var item in pagina.Items)
 {
-    Console.WriteLine($"{notif.Id} — {notif.Status} — {notif.CreationTime}");
+    // item.Notification contiene los campos base de la notificación
+    Console.WriteLine($"{item.Notification.Id} — {item.Notification.Status} — {item.Notification.CreationTime}");
+    // item.Application, item.NotificationType, etc. son LookupItem con Id/Name/Code/DisplayName
+    Console.WriteLine($"  App: {item.Application?.DisplayName}");
 }
 ```
 {{end}}
@@ -183,8 +188,68 @@ Console.WriteLine($"Mensajes exitosos: {notif.NumberOfSuccessMessages}/{notif.Nu
 
 {{if SDK == "csharp"}}
 ```csharp
-// Incluye datos expandidos: aplicación, tipo, subtipo, país, etc.
+// Retorna NotificationWithDetailsResponse con la notificación y sus datos relacionados
 var detalle = await client.Notifications.GetWithDetailsAsync(id);
+
+// Datos base de la notificación
+Console.WriteLine($"ID: {detalle.Notification.Id}");
+Console.WriteLine($"Estado: {detalle.Notification.Status}");
+Console.WriteLine($"Mensajes exitosos: {detalle.Notification.NumberOfSuccessMessages}/{detalle.Notification.NumberOfTotalMessages}");
+
+// Datos relacionados expandidos (cada uno es un LookupItem con Id/Name/Code/DisplayName)
+Console.WriteLine($"Aplicación: {detalle.Application?.DisplayName}");
+Console.WriteLine($"Tipo: {detalle.NotificationType?.DisplayName}");
+Console.WriteLine($"Subtipo: {detalle.NotificationSubtype?.DisplayName}");
+Console.WriteLine($"País: {detalle.Country?.Code}");
+Console.WriteLine($"Entorno: {detalle.DeploymentEnvironment?.Name}");
+
+// ChannelTypes es una lista de LookupItem (puede tener SMS, Email, WhatsApp)
+foreach (var canal in detalle.ChannelTypes)
+    Console.WriteLine($"  Canal: {canal.DisplayName}");
+```
+{{end}}
+
+### Modelo `NotificationWithDetailsResponse`
+
+{{if SDK == "csharp"}}
+```csharp
+public class NotificationWithDetailsResponse
+{
+    // Datos base de la notificación
+    public NotificationResponse Notification { get; set; }
+
+    // Datos relacionados expandidos
+    public LookupItem Application { get; set; }
+    public LookupItem NotificationType { get; set; }
+    public LookupItem NotificationSubtype { get; set; }
+    public LookupItem Country { get; set; }
+    public LookupItem DeploymentEnvironment { get; set; }
+    public List<LookupItem> ChannelTypes { get; set; }
+}
+
+public class LookupItem
+{
+    public Guid Id { get; set; }
+    public string? Name { get; set; }
+    public string? Code { get; set; }
+    public string? DisplayName { get; set; }
+}
+
+public class NotificationResponse
+{
+    public Guid Id { get; set; }
+    public NotificationSource? Source { get; set; }
+    public string? Language { get; set; }
+    public NotificationStatus? Status { get; set; }
+    public int NumberOfSuccessMessages { get; set; }
+    public int NumberOfTotalMessages { get; set; }
+    public Guid ApplicationId { get; set; }
+    public Guid NotificationTypeId { get; set; }
+    public Guid NotificationSubtypeId { get; set; }
+    public Guid CountryId { get; set; }
+    public DateTime CreationTime { get; set; }
+    public string? ConcurrencyStamp { get; set; }
+}
 ```
 {{end}}
 
@@ -201,6 +266,7 @@ var detalle = await client.Notifications.GetWithDetailsAsync(id);
 | `NotificationSubtypeId` | `Guid?` | Filtrar por subtipo |
 | `CountryId` | `Guid?` | Filtrar por país |
 | `ChannelTypeId` | `Guid?` | Filtrar por canal |
+| `DeploymentEnvironmentId` | `Guid?` | Filtrar por entorno de despliegue |
 | `CreationTimeMin` | `DateTime?` | Fecha de creación mínima |
 | `CreationTimeMax` | `DateTime?` | Fecha de creación máxima |
 | `Sorting` | `string?` | Expresión de ordenamiento (ej. `"CreationTime desc"`) |

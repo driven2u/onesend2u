@@ -56,6 +56,8 @@ Notificación recibida
 
 {{if SDK == "csharp"}}
 ```csharp
+// GetListAsync retorna PagedResult<MessageWithDetailsResponse>
+// Cada item contiene el mensaje base más sus datos relacionados expandidos
 var resultado = await client.Messages.GetListAsync(new GetMessagesRequest
 {
     MessageProcessState = MessageProcessState.Error,
@@ -65,9 +67,12 @@ var resultado = await client.Messages.GetListAsync(new GetMessagesRequest
 });
 
 Console.WriteLine($"Total con error: {resultado.TotalCount}");
-foreach (var mensaje in resultado.Items)
+foreach (var item in resultado.Items)
 {
-    Console.WriteLine($"{mensaje.Id} — {mensaje.Destination} — {mensaje.MessageProcessState}");
+    // item.Message contiene los campos base del mensaje
+    Console.WriteLine($"{item.Message.Id} — {item.Message.Destination} — {item.Message.MessageProcessState}");
+    // item.Application, item.ChannelType, etc. son LookupItem con Id/Name/Code/DisplayName
+    Console.WriteLine($"  App: {item.Application?.DisplayName}  Canal: {item.ChannelType?.DisplayName}");
 }
 ```
 {{end}}
@@ -89,12 +94,45 @@ Console.WriteLine($"Modificado: {mensaje.LastModificationTime}");
 
 {{if SDK == "csharp"}}
 ```csharp
-// Incluye datos expandidos: aplicación, proveedor, canal, tipo, etc.
+// Retorna MessageWithDetailsResponse con el mensaje y sus datos relacionados
 var detalle = await client.Messages.GetWithDetailsAsync(mensajeId);
+
+// Datos base del mensaje
+Console.WriteLine($"Destino: {detalle.Message.Destination}");
+Console.WriteLine($"Estado: {detalle.Message.MessageProcessState}");
+Console.WriteLine($"Creado: {detalle.Message.CreationTime}");
+
+// Datos relacionados expandidos (LookupItem con Id/Name/Code/DisplayName)
+Console.WriteLine($"Aplicación: {detalle.Application?.DisplayName}");
+Console.WriteLine($"Canal: {detalle.ChannelType?.DisplayName}");
+Console.WriteLine($"Proveedor: {detalle.Provider?.Name}");
+Console.WriteLine($"Tipo: {detalle.NotificationType?.DisplayName}");
+Console.WriteLine($"Subtipo: {detalle.NotificationSubtype?.DisplayName}");
 ```
 {{end}}
 
-## Modelo de respuesta
+### Modelo `MessageWithDetailsResponse`
+
+{{if SDK == "csharp"}}
+```csharp
+public class MessageWithDetailsResponse
+{
+    // Datos base del mensaje
+    public MessageResponse Message { get; set; }
+
+    // Datos relacionados expandidos (LookupItem con Id/Name/Code/DisplayName)
+    public LookupItem Application { get; set; }
+    public LookupItem ChannelType { get; set; }
+    public LookupItem NotificationType { get; set; }
+    public LookupItem NotificationSubtype { get; set; }
+    public LookupItem Country { get; set; }
+    public LookupItem Provider { get; set; }
+    public LookupItem DeploymentEnvironment { get; set; }
+}
+```
+{{end}}
+
+## Modelo de respuesta base
 
 {{if SDK == "csharp"}}
 ```csharp
@@ -161,11 +199,12 @@ var fallidos = await client.Messages.GetListAsync(new GetMessagesRequest
 
 Console.WriteLine($"Mensajes fallidos (últimas 24h): {fallidos.TotalCount}");
 
-foreach (var msg in fallidos.Items)
+foreach (var item in fallidos.Items)
 {
-    Console.WriteLine($"  ID: {msg.Id}");
-    Console.WriteLine($"  Destino: {msg.Destination}");
-    Console.WriteLine($"  Notificación: {msg.NotificationId}");
+    // Los campos del mensaje están en item.Message
+    Console.WriteLine($"  ID: {item.Message.Id}");
+    Console.WriteLine($"  Destino: {item.Message.Destination}");
+    Console.WriteLine($"  Notificación: {item.Message.NotificationId}");
     Console.WriteLine();
 }
 ```

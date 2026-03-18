@@ -13,14 +13,14 @@ The **OneSend2U .NET SDK** (`OneSend2U.Sdk`) is a lightweight NuGet package that
 
 ## What the SDK provides
 
-The SDK wraps **40 API endpoints** across 8 sub-clients, all accessible from a single `OneSend2UClient` entry point:
+The SDK wraps **41 API endpoints** across 8 sub-clients, all accessible from a single `OneSend2UClient` entry point:
 
 | Sub-client | Endpoints | Purpose |
 |---|---|---|
 | `client.Notifications` | 4 | Send and query notifications |
 | `client.Templates` | 9 | Template configurations and content |
 | `client.Messages` | 3 | Track individual message delivery |
-| `client.Webhooks` | 6 | Manage webhook subscriptions |
+| `client.Webhooks` | 7 | Manage webhook subscriptions |
 | `client.ApiLogs` | 2 | Query API request/response logs |
 | `client.Contacts` | 5 | Manage contact records |
 | `client.ContactsGroups` | 6 | Manage contact groups |

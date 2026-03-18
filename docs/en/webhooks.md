@@ -18,7 +18,8 @@ The `client.Webhooks` sub-client provides full CRUD operations for webhook subsc
 | `CreateAsync(request)` | Create a new webhook |
 | `UpdateAsync(id, request)` | Update an existing webhook |
 | `DeleteAsync(id)` | Delete a webhook |
-| `TestAsync(request)` | Send a test payload to a webhook endpoint |
+| `TestAsync(webhook)` | Send a test payload to a webhook endpoint |
+| `RotateSigningSecretAsync(id)` | Rotate the HMAC signing secret for a webhook |
 
 ## Webhook events
 
@@ -104,6 +105,33 @@ Console.WriteLine($"Signing enabled: {webhook.IsSigningEnabled}");
 | `LinearBackoff` | Linearly increasing delay |
 | `Jitter` | Randomized delay |
 
+### WebhookResponse fields
+
+`GetAsync` and `CreateAsync` return a `WebhookResponse` with these fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `Id` | `Guid` | Webhook ID |
+| `Name` | `string?` | Webhook name |
+| `TargetEndPoint` | `string?` | Target URL |
+| `HttpMethod` | `string?` | HTTP method |
+| `Headers` | `string?` | Custom headers as JSON |
+| `Body` | `string?` | Custom request body template (if set) |
+| `NumberOfRetries` | `int` | Retry attempts on failure |
+| `RetryStrategy` | `RetryStrategy` | Retry timing strategy |
+| `RetryDelay` | `int` | Seconds between retries |
+| `Timeout` | `int` | Request timeout in seconds |
+| `Status` | `bool` | Whether the webhook is active |
+| `DeploymentEnvironmentId` | `Guid` | Environment scope |
+| `ApplicationIds` | `List<Guid>` | Application scope |
+| `EventTypes` | `List<EventType>` | Triggering event types |
+| `Statuses` | `List<MessageProcessState>` | Triggering message states |
+| `UserActions` | `List<string>` | Triggering user action identifiers |
+| `IsSigningEnabled` | `bool` | Whether HMAC signing is enabled |
+| `SigningSecret` | `string?` | Current signing secret |
+| `SigningSecretGracePeriodMinutes` | `int` | Grace period for secret rotation |
+| `ConcurrencyStamp` | `string?` | Optimistic concurrency stamp |
+
 ## Updating a webhook
 
 Pass the `ConcurrencyStamp` from the `GetAsync` response to prevent conflicting updates:
@@ -140,17 +168,43 @@ Console.WriteLine("Webhook deleted.");
 
 ## Testing a webhook
 
-Sends a synthetic test event to the webhook endpoint without creating a real notification.
+Sends a synthetic test event to the webhook endpoint without creating a real notification. You pass the full `WebhookResponse` object (fetch it first with `GetAsync`).
+
+`WebhookTestResponse` fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `StatusCode` | `int?` | HTTP status code returned by your endpoint |
+| `ReasonPhrase` | `string?` | HTTP reason phrase (e.g., `"OK"`, `"Not Found"`) |
+| `FormattedContent` | `string?` | Pretty-printed response body |
+| `RawContent` | `string?` | Raw response body |
+| `ErrorMessage` | `string?` | Error message if the request could not be delivered |
 
 {{if SDK == "csharp"}}
 ```csharp
-var testResult = await client.Webhooks.TestAsync(new TestWebhookRequest
-{
-    WebhookId = webhookId
-});
+// Fetch the webhook first — TestAsync takes the full WebhookResponse
+var webhook = await client.Webhooks.GetAsync(webhookId);
+var testResult = await client.Webhooks.TestAsync(webhook);
 
 Console.WriteLine($"Test status code: {testResult.StatusCode}");
-Console.WriteLine($"Response body: {testResult.ResponseBody}");
+Console.WriteLine($"Reason: {testResult.ReasonPhrase}");
+
+if (testResult.ErrorMessage != null)
+    Console.WriteLine($"Delivery error: {testResult.ErrorMessage}");
+else
+    Console.WriteLine($"Response body: {testResult.FormattedContent}");
+```
+{{end}}
+
+## Rotating the signing secret
+
+Use `RotateSigningSecretAsync` to generate a new HMAC signing secret. The previous secret stays valid for the duration of `SigningSecretGracePeriodMinutes` so your endpoint can drain in-flight events before switching.
+
+{{if SDK == "csharp"}}
+```csharp
+var rotated = await client.Webhooks.RotateSigningSecretAsync(webhookId);
+Console.WriteLine($"New secret: {rotated.SigningSecret}");
+// Previous secret remains valid during grace period — validate against both secrets in the meantime
 ```
 {{end}}
 

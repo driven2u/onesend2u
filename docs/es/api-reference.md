@@ -1,6 +1,6 @@
 # Referencia de API
 
-Tabla completa de los 40 endpoints disponibles en el SDK, agrupados por sub-cliente. URL base: `https://api.onesend2u.com`.
+Tabla completa de los 41 endpoints disponibles en el SDK, agrupados por sub-cliente. URL base: `https://api.onesend2u.com`.
 
 ## Endpoints por sub-cliente
 
@@ -49,7 +49,7 @@ Tabla completa de los 40 endpoints disponibles en el SDK, agrupados por sub-clie
 
 ---
 
-### Webhooks — `client.Webhooks` (6 endpoints)
+### Webhooks — `client.Webhooks` (7 endpoints)
 
 | Método SDK | Método HTTP | Ruta del endpoint |
 |---|---|---|
@@ -58,7 +58,8 @@ Tabla completa de los 40 endpoints disponibles en el SDK, agrupados por sub-clie
 | `client.Webhooks.CreateAsync(request)` | POST | `/api/app/webhooks` |
 | `client.Webhooks.UpdateAsync(id, request)` | PUT | `/api/app/webhooks/{id}` |
 | `client.Webhooks.DeleteAsync(id)` | DELETE | `/api/app/webhooks/{id}` |
-| `client.Webhooks.TestAsync(request)` | POST | `/api/app/webhooks/test` |
+| `client.Webhooks.TestAsync(webhook)` | POST | `/api/app/webhooks/test` |
+| `client.Webhooks.RotateSigningSecretAsync(id)` | POST | `/api/app/webhooks/{id}/rotate-signing-secret` |
 
 **Permisos requeridos:** `Cpaas.Webhooks`
 
@@ -144,10 +145,10 @@ Tabla completa de los 40 endpoints disponibles en el SDK, agrupados por sub-clie
 
 ### `NotificationSource`
 
-| Valor | Descripción |
-|---|---|
-| `CPaaS` | Originado desde el portal web CPaaS |
-| `Api` | Originado desde llamada a la API (SDK) |
+| Valor | Valor numérico | Descripción |
+|---|---|---|
+| `CPaaS` | 1 | Originado desde el portal web |
+| `Api` | 2 | Originado desde llamada a la API (SDK) |
 
 ### `NotificationApiLogStatus`
 
@@ -182,41 +183,110 @@ Tabla completa de los 40 endpoints disponibles en el SDK, agrupados por sub-clie
 
 | Valor | Descripción |
 |---|---|
-| `Sms` | Plantilla de SMS |
-| `Email` | Plantilla de Email |
-| `WhatsApp` | Plantilla de WhatsApp |
+| `Default` | Plantilla estándar |
+| `Carousel` | Plantilla tipo carrusel (WhatsApp) |
+| `Coupon` | Plantilla tipo cupón (WhatsApp) |
 
 ### `TemplateConfigurationApprovalState`
 
 | Valor | Descripción |
 |---|---|
+| `NotRequired` | No requiere aprobación del proveedor |
+| `UnSubmitted` | No enviada para revisión |
+| `Appeal` | En proceso de apelación |
 | `Pending` | Pendiente de aprobación |
-| `Approved` | Aprobada |
-| `Rejected` | Rechazada |
+| `Approved` | Aprobada y lista para usar |
+| `Rejected` | Rechazada por el proveedor |
+| `Paused` | Pausada temporalmente |
+| `Disabled` | Deshabilitada |
+| `Deleted` | Eliminada |
 
 ### `TemplateConfigurationValidationStatus`
 
+| Valor | Valor numérico | Descripción |
+|---|---|---|
+| `None` | 0 | Ningún canal configurado |
+| `Partial` | 1 | Algunos canales configurados |
+| `All` | 2 | Todos los canales configurados |
+
+### `TemplateConfigurationCategory`
+
 | Valor | Descripción |
 |---|---|
-| `Valid` | Plantilla válida |
-| `Invalid` | Plantilla con errores |
-| `NotValidated` | Sin validar |
+| `Utility` | Mensajes de utilidad (confirmaciones, alertas, actualizaciones) |
+| `Marketing` | Mensajes de marketing y promociones |
+| `Authentication` | Mensajes de autenticación (OTP, verificación) |
+
+### `TemplateSection`
+
+Identifica la sección de una plantilla donde aparece una variable:
+
+| Valor | Descripción |
+|---|---|
+| `Subject` | Asunto (Email) |
+| `Header` | Encabezado del mensaje |
+| `Body` | Cuerpo principal del mensaje |
+| `Footer` | Pie del mensaje |
+| `Buttons` | Botones de acción (WhatsApp) |
+
+### `TemplateMarketingCategory`
+
+Subcategoría para plantillas de marketing (WhatsApp):
+
+| Valor | Descripción |
+|---|---|
+| `Default` | Marketing estándar |
+| `Catalog` | Catálogo de productos |
+| `Flow` | Flujo interactivo |
+
+### `TemplateServiceCategory`
+
+Subcategoría para plantillas de utilidad (WhatsApp):
+
+| Valor | Descripción |
+|---|---|
+| `Default` | Utilidad estándar |
+| `Flow` | Flujo interactivo |
+
+### `TemplateAuthenticationCategory`
+
+Subcategoría para plantillas de autenticación (WhatsApp):
+
+| Valor | Descripción |
+|---|---|
+| `Default` | Autenticación estándar |
+
+### `NotificationVariablesType`
+
+Indica cómo se resuelve el valor de una variable de plantilla:
+
+| Valor | Descripción |
+|---|---|
+| `Template` | Valor definido en la plantilla |
+| `Auto` | Resuelto automáticamente por la plataforma |
+| `Property` | Tomado de una propiedad del destinatario |
+| `TemplateName` | Nombre de la plantilla |
+| `TemplateLanguage` | Idioma de la plantilla |
+| `Optional` | Variable opcional; si no se provee se omite |
 
 ### `TemplateHeaderType` (WhatsApp)
 
 | Valor | Descripción |
 |---|---|
 | `Text` | Header de texto |
-| `Image` | Header de imagen |
-| `Document` | Header de documento |
-| `Video` | Header de video |
+| `Media` | Header con imagen, video o documento |
+| `Location` | Header con ubicación geográfica |
 
 ### `TemplateButtonType` (WhatsApp)
 
 | Valor | Descripción |
 |---|---|
-| `QuickReply` | Respuesta rápida |
-| `CallToAction` | Llamada a la acción (URL, teléfono) |
+| `Attachment` | Archivo adjunto |
+| `Subscribe` | Suscripción a comunicaciones |
+| `Unsubscribe` | Cancelación de suscripción |
+| `Link` | Enlace URL |
+| `Call` | Llamada telefónica |
+| `UserAction` | Acción de usuario personalizada |
 
 ---
 

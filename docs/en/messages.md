@@ -57,6 +57,8 @@ A message transitions through the following states (`MessageProcessState` enum):
 
 ## Listing messages
 
+`GetListAsync` returns `PagedResult<MessageWithDetailsResponse>`. Each item wraps a `Message` (`MessageResponse`) plus lookup data (country, application, channel type, etc.).
+
 {{if SDK == "csharp"}}
 ```csharp
 using OneSend2U.Sdk.Messages.Models;
@@ -69,25 +71,49 @@ var list = await client.Messages.GetListAsync(new GetMessagesRequest
 
 Console.WriteLine($"Total: {list.TotalCount}");
 
-foreach (var message in list.Items)
+foreach (var item in list.Items)
 {
+    // Core message fields are inside item.Message
     Console.WriteLine(
-        $"[{message.Id}] {message.Destination} — {message.MessageProcessState}");
+        $"[{item.Message.Id}] {item.Message.Destination} — {item.Message.MessageProcessState}");
 }
 ```
 {{end}}
 
-### Filtering
+### Filter parameters
 
-`GetMessagesRequest` supports server-side filtering. Refer to the platform admin panel for supported filter fields. Common filters include notification ID and message state.
+`GetMessagesRequest` supports the following server-side filters:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `FilterText` | `string?` | `null` | Free text search across multiple fields |
+| `Destination` | `string?` | `null` | Filter by destination address (phone, email, WhatsApp ID) |
+| `MessageProcessState` | `MessageProcessState?` | `null` | Filter by delivery state |
+| `Language` | `string?` | `null` | Filter by language code |
+| `NotificationSource` | `NotificationSource?` | `null` | Filter by origin: `CPaaS` or `API` |
+| `CountryId` | `Guid?` | `null` | Filter by country |
+| `ApplicationId` | `Guid?` | `null` | Filter by application |
+| `ChannelTypeId` | `Guid?` | `null` | Filter by channel type |
+| `NotificationTypeId` | `Guid?` | `null` | Filter by notification type |
+| `NotificationSubtypeId` | `Guid?` | `null` | Filter by notification subtype |
+| `ProviderId` | `Guid?` | `null` | Filter by provider |
+| `DeploymentEnvironmentId` | `Guid?` | `null` | Filter by deployment environment |
+| `NotificationId` | `Guid?` | `null` | Filter by parent notification ID |
+| `CreationTimeMin` | `DateTime?` | `null` | Minimum creation date |
+| `CreationTimeMax` | `DateTime?` | `null` | Maximum creation date |
+| `Sorting` | `string?` | `null` | Sort expression (e.g., `"CreationTime desc"`) |
+| `SkipCount` | `int` | `0` | Items to skip (pagination) |
+| `MaxResultCount` | `int` | `10` | Maximum items to return |
 
 {{if SDK == "csharp"}}
 ```csharp
+// Filter by notification ID and delivery state
 var list = await client.Messages.GetListAsync(new GetMessagesRequest
 {
-    SkipCount  = 0,
-    MaxResults = 20
-    // Add filter properties as supported by GetMessagesRequest
+    NotificationId     = notificationId,
+    MessageProcessState = MessageProcessState.Error,
+    SkipCount          = 0,
+    MaxResultCount     = 20
 });
 ```
 {{end}}
@@ -105,12 +131,20 @@ Console.WriteLine($"Created: {message.CreationTime:O}");
 
 ## Getting a message with navigation properties
 
-Returns the message with its related notification, template, provider details, and status history.
+Returns a `MessageWithDetailsResponse` that wraps the base `MessageResponse` plus lookup data (country, application, channel type, provider, notification type, etc.).
 
 {{if SDK == "csharp"}}
 ```csharp
 var details = await client.Messages.GetWithDetailsAsync(messageId);
-Console.WriteLine($"Message state: {details.MessageProcessState}");
+
+// Core message fields are inside details.Message
+Console.WriteLine($"Message state: {details.Message.MessageProcessState}");
+Console.WriteLine($"Destination: {details.Message.Destination}");
+
+// Lookup data is available as named properties
+Console.WriteLine($"Application: {details.Application?.Name}");
+Console.WriteLine($"Country: {details.Country?.Code}");
+Console.WriteLine($"Channel: {details.ChannelType?.DisplayName}");
 ```
 {{end}}
 
@@ -132,6 +166,6 @@ var page2 = await client.Messages.GetListAsync(new GetMessagesRequest
     MaxResults = 20
 });
 
-Console.WriteLine($"Total messages: {page1.TotalCount}");
+Console.WriteLine($"Total messages: {page1.TotalCount}"); // TotalCount is the same across pages
 ```
 {{end}}

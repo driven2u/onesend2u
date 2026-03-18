@@ -70,26 +70,43 @@ foreach (var config in resultado.Items)
 
 ## Validar que existe una plantilla
 
-Antes de enviar, puedes verificar que existe una plantilla configurada para los parámetros dados:
+Antes de enviar, puedes verificar que existe una plantilla configurada para los parámetros dados. La respuesta indica qué canales están configurados y cuáles no.
 
 {{if SDK == "csharp"}}
 ```csharp
 var validacion = await client.Templates.ValidateAsync(new TemplateConfigurationValidationRequest
 {
-    Application = "myapp",
-    Country = "br",
+    // Códigos de la aplicación, país, idioma, tipo y subtipo (todos requeridos)
+    ApplicationCode = "myapp",
+    CountryCode = "br",
     Language = "pt-BR",
-    NotificationType = "trans",
-    NotificationSubtype = "invoice"
+    NotificationTypeCode = "trans",
+    NotificationSubtypeCode = "invoice",
+    DeploymentEnvironmentId = environmentId,
+    // Canales a validar; si está vacío valida todos los configurados
+    TargetChannels = [new TargetChannel { Channel = "sms" }, new TargetChannel { Channel = "email" }]
 });
 
-if (validacion.IsValid)
+// Status: None = ninguno configurado, Partial = algunos, All = todos configurados
+Console.WriteLine($"Estado: {validacion.Status}");
+Console.WriteLine($"Canales configurados: {string.Join(", ", validacion.ConfiguredChannels)}");
+Console.WriteLine($"Canales sin configurar: {string.Join(", ", validacion.UnconfiguredChannels)}");
+```
+{{end}}
+
+### Solicitud de validación
+
+{{if SDK == "csharp"}}
+```csharp
+public class TemplateConfigurationValidationRequest
 {
-    Console.WriteLine("Plantilla encontrada. Se puede enviar.");
-}
-else
-{
-    Console.WriteLine($"No se encontró plantilla: {validacion.ValidationMessage}");
+    public string ApplicationCode { get; set; }           // Código de aplicación. Requerido.
+    public string CountryCode { get; set; }               // Código de país ISO. Requerido.
+    public string Language { get; set; }                  // Código de idioma. Requerido.
+    public string NotificationTypeCode { get; set; }      // Código de tipo. Requerido.
+    public string NotificationSubtypeCode { get; set; }   // Código de subtipo. Requerido.
+    public Guid DeploymentEnvironmentId { get; set; }     // ID del entorno de despliegue.
+    public List<TargetChannel> TargetChannels { get; set; } // Canales a validar.
 }
 ```
 {{end}}
@@ -100,28 +117,74 @@ else
 ```csharp
 public class TemplateConfigurationValidationResponse
 {
-    public bool IsValid { get; set; }
-    public string? ValidationMessage { get; set; }
+    // None=ningún canal, Partial=algunos canales, All=todos los canales configurados
+    public TemplateConfigurationValidationStatus Status { get; set; }
+    public List<string> ConfiguredChannels { get; set; }     // Canales con plantilla configurada
+    public List<string> UnconfiguredChannels { get; set; }   // Canales sin plantilla configurada
 }
 ```
 {{end}}
 
 ## Vista previa del mensaje
 
-Genera el mensaje final con las variables sustituidas, sin enviarlo:
+Genera el mensaje final con las variables sustituidas, sin enviarlo. Útil para verificar el contenido antes de enviar en producción.
 
 {{if SDK == "csharp"}}
 ```csharp
-var preview = await client.Templates.GetPreviewAsync(new GetTemplateConfigurationsRequest
+var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationPreviewRequest
 {
-    Application = "myapp",
-    Country = "br",
+    ApplicationCode = "myapp",
+    CountryCode = "br",
     Language = "pt-BR",
-    NotificationType = "trans",
-    NotificationSubtype = "invoice"
+    NotificationTypeCode = "trans",
+    NotificationSubtypeCode = "invoice",
+    DeploymentEnvironmentId = environmentId,
+    TargetChannels = [new TargetChannel { Channel = "sms" }]
 });
 
-Console.WriteLine($"Mensaje de muestra: {preview.RenderedContent}");
+// Datos de la configuración de plantilla usada
+Console.WriteLine($"Transaction ID: {preview.TransactionId}");
+Console.WriteLine($"App: {preview.ApplicationCode} — País: {preview.CountryCode}");
+
+// preview.Recipients contiene una lista de destinatarios de muestra
+foreach (var recipient in preview.Recipients)
+    Console.WriteLine($"  Destinatario: {recipient.Channel} — {recipient.Destination}");
+
+// preview.TargetChannels muestra el contenido renderizado por canal
+foreach (var canal in preview.TargetChannels)
+{
+    Console.WriteLine($"  Canal: {canal.Channel}");
+    Console.WriteLine($"  Contenido: {canal.RenderedBody}");
+}
+
+// preview.TemplateVariables muestra las variables de plantilla usadas
+foreach (var variable in preview.TemplateVariables)
+    Console.WriteLine($"  Variable: {variable.Key} = {variable.Value}");
+```
+{{end}}
+
+### Respuesta de vista previa
+
+{{if SDK == "csharp"}}
+```csharp
+public class TemplateConfigurationPreviewResponse
+{
+    public string? TransactionId { get; set; }
+    public string? ApplicationCode { get; set; }
+    public string? Language { get; set; }
+    public string? CountryCode { get; set; }
+    public string? NotificationTypeCode { get; set; }
+    public string? NotificationSubtypeCode { get; set; }
+    public List<PreviewChannel> TargetChannels { get; set; }        // Canales con contenido renderizado
+    public List<PreviewRecipient> Recipients { get; set; }          // Destinatarios de muestra
+    public List<PreviewTemplateVariable> TemplateVariables { get; set; } // Variables usadas
+}
+
+public class PreviewTemplateVariable
+{
+    public string Key { get; set; }    // Nombre de la variable
+    public string Value { get; set; }  // Valor de ejemplo usado en el preview
+}
 ```
 {{end}}
 
@@ -177,31 +240,49 @@ foreach (var boton in botones)
 
 | Valor enum | Descripción |
 |---|---|
+| `TemplateConfigurationApprovalState.NotRequired` | No requiere aprobación |
+| `TemplateConfigurationApprovalState.UnSubmitted` | No enviada para revisión |
+| `TemplateConfigurationApprovalState.Appeal` | En proceso de apelación |
 | `TemplateConfigurationApprovalState.Pending` | Pendiente de revisión |
 | `TemplateConfigurationApprovalState.Approved` | Aprobada y lista para usar |
-| `TemplateConfigurationApprovalState.Rejected` | Rechazada |
+| `TemplateConfigurationApprovalState.Rejected` | Rechazada por el proveedor |
+| `TemplateConfigurationApprovalState.Paused` | Pausada temporalmente |
+| `TemplateConfigurationApprovalState.Disabled` | Deshabilitada |
+| `TemplateConfigurationApprovalState.Deleted` | Eliminada |
 
-## Estados de validación
+## Estados de validación de configuración
 
-| Valor enum | Descripción |
-|---|---|
-| `TemplateConfigurationValidationStatus.Valid` | Plantilla válida |
-| `TemplateConfigurationValidationStatus.Invalid` | Plantilla con errores |
-| `TemplateConfigurationValidationStatus.NotValidated` | Aún no validada |
+`TemplateConfigurationValidationStatus` indica qué proporción de canales están configurados:
+
+| Valor enum | Valor numérico | Descripción |
+|---|---|---|
+| `TemplateConfigurationValidationStatus.None` | 0 | Ningún canal configurado |
+| `TemplateConfigurationValidationStatus.Partial` | 1 | Algunos canales configurados |
+| `TemplateConfigurationValidationStatus.All` | 2 | Todos los canales configurados |
 
 ## Tipos de plantilla
 
 | Valor enum | Descripción |
 |---|---|
-| `TemplateType.Sms` | SMS |
-| `TemplateType.Email` | Correo electrónico |
-| `TemplateType.WhatsApp` | WhatsApp |
+| `TemplateType.Default` | Plantilla estándar |
+| `TemplateType.Carousel` | Plantilla tipo carrusel (WhatsApp) |
+| `TemplateType.Coupon` | Plantilla tipo cupón (WhatsApp) |
 
 ## Tipos de header (WhatsApp)
 
 | Valor enum | Descripción |
 |---|---|
 | `TemplateHeaderType.Text` | Header de texto |
-| `TemplateHeaderType.Image` | Header de imagen |
-| `TemplateHeaderType.Document` | Header de documento |
-| `TemplateHeaderType.Video` | Header de video |
+| `TemplateHeaderType.Media` | Header con imagen, video o documento |
+| `TemplateHeaderType.Location` | Header con ubicación geográfica |
+
+## Tipos de botón (WhatsApp)
+
+| Valor enum | Descripción |
+|---|---|
+| `TemplateButtonType.Attachment` | Archivo adjunto |
+| `TemplateButtonType.Subscribe` | Suscripción |
+| `TemplateButtonType.Unsubscribe` | Cancelación de suscripción |
+| `TemplateButtonType.Link` | Enlace URL |
+| `TemplateButtonType.Call` | Llamada telefónica |
+| `TemplateButtonType.UserAction` | Acción de usuario personalizada |

@@ -7,7 +7,7 @@
 
 # Webhooks
 
-El sub-cliente `client.Webhooks` permite gestionar webhooks para recibir notificaciones en tiempo real sobre eventos de mensajería. Cubre 6 endpoints con operaciones CRUD completas más un endpoint de prueba.
+El sub-cliente `client.Webhooks` permite gestionar webhooks para recibir notificaciones en tiempo real sobre eventos de mensajería. Cubre 7 endpoints con operaciones CRUD completas, un endpoint de prueba y rotación de secreto de firma.
 
 ## Métodos disponibles
 
@@ -18,7 +18,8 @@ El sub-cliente `client.Webhooks` permite gestionar webhooks para recibir notific
 | `CreateAsync(request)` | POST | Crea un nuevo webhook |
 | `UpdateAsync(id, request)` | PUT | Actualiza un webhook existente |
 | `DeleteAsync(id)` | DELETE | Elimina un webhook |
-| `TestAsync(request)` | POST | Envía un payload de prueba a un endpoint |
+| `TestAsync(webhook)` | POST | Envía un payload de prueba usando un webhook existente |
+| `RotateSigningSecretAsync(id)` | POST | Genera un nuevo secreto de firma HMAC-SHA256 |
 
 ## Crear un webhook
 
@@ -162,24 +163,87 @@ Console.WriteLine("Webhook eliminado correctamente.");
 
 ## Probar un webhook
 
-Envía un payload de prueba a un endpoint sin necesidad de crear el webhook:
+Envía un payload de prueba usando un webhook ya registrado. El método recibe el objeto `WebhookResponse` completo (obtenido con `GetAsync`):
 
 {{if SDK == "csharp"}}
 ```csharp
-var testResult = await client.Webhooks.TestAsync(new WebhookTestRequest
-{
-    TargetEndPoint = "https://mi-app.com/webhooks/test",
-    HttpMethod = "POST"
-});
+// Primero obtén el webhook que quieres probar
+var webhook = await client.Webhooks.GetAsync(webhookId);
 
-Console.WriteLine($"Resultado de prueba: {testResult.StatusCode}");
-Console.WriteLine($"Respuesta: {testResult.ResponseBody}");
+// Luego envía el payload de prueba al endpoint configurado en ese webhook
+var testResult = await client.Webhooks.TestAsync(webhook);
+
+Console.WriteLine($"HTTP Status: {testResult.StatusCode}");
+Console.WriteLine($"Razón: {testResult.ReasonPhrase}");
+Console.WriteLine($"Cuerpo (formateado): {testResult.FormattedContent}");
+Console.WriteLine($"Cuerpo (raw): {testResult.RawContent}");
+
+// Si hubo un error de conexión, ErrorMessage lo indica
+if (testResult.ErrorMessage != null)
+    Console.WriteLine($"Error: {testResult.ErrorMessage}");
 ```
 {{end}}
 
-## Rotación de secretos de firma
+### Respuesta de prueba de webhook
 
-Cuando el secreto de firma de un webhook es rotado, el sistema mantiene el secreto anterior durante un período de gracia (`SigningSecretGracePeriodMinutes`). Durante este período, el webhook puede ser verificado con cualquiera de los dos secretos.
+{{if SDK == "csharp"}}
+```csharp
+public class WebhookTestResponse
+{
+    public int? StatusCode { get; set; }          // Código HTTP de la respuesta del endpoint
+    public string? ReasonPhrase { get; set; }     // Frase de estado HTTP (ej. "OK", "Not Found")
+    public string? FormattedContent { get; set; } // Cuerpo de respuesta con formato legible
+    public string? RawContent { get; set; }       // Cuerpo de respuesta sin procesar
+    public string? ErrorMessage { get; set; }     // Mensaje de error si no se pudo conectar
+}
+```
+{{end}}
+
+## Modelo de respuesta del webhook
+
+{{if SDK == "csharp"}}
+```csharp
+public class WebhookResponse
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string TargetEndPoint { get; set; }
+    public string HttpMethod { get; set; }
+    public string? Headers { get; set; }
+    public string? Body { get; set; }                             // Cuerpo personalizado del payload
+    public int NumberOfRetries { get; set; }
+    public RetryStrategy RetryStrategy { get; set; }
+    public int RetryDelay { get; set; }
+    public int Timeout { get; set; }
+    public bool Status { get; set; }
+    public Guid DeploymentEnvironmentId { get; set; }
+    public List<Guid> ApplicationIds { get; set; }
+    public List<EventType> EventTypes { get; set; }
+    public List<MessageProcessState> Statuses { get; set; }
+    public List<string> UserActions { get; set; }
+    public bool IsSigningEnabled { get; set; }
+    public string? SigningSecret { get; set; }
+    public int SigningSecretGracePeriodMinutes { get; set; }
+    public string? ConcurrencyStamp { get; set; }
+}
+```
+{{end}}
+
+## Rotar secreto de firma
+
+Genera un nuevo secreto HMAC-SHA256 para un webhook. El secreto anterior sigue siendo válido durante el período de gracia (`SigningSecretGracePeriodMinutes`), lo que permite rotar sin interrumpir el servicio:
+
+{{if SDK == "csharp"}}
+```csharp
+var rotated = await client.Webhooks.RotateSigningSecretAsync(webhookId);
+Console.WriteLine($"Nuevo secreto: {rotated.SigningSecret}");
+// El secreto anterior sigue siendo válido durante el período de gracia
+```
+{{end}}
+
+## Rotación de secretos de firma — período de gracia
+
+Cuando el secreto es rotado, el sistema acepta firmas generadas con cualquiera de los dos secretos durante el tiempo configurado en `SigningSecretGracePeriodMinutes`.
 
 {{if SDK == "csharp"}}
 ```csharp

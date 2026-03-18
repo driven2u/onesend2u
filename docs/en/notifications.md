@@ -16,7 +16,7 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 | `SendAsync(request)` | Send a notification to one or more recipients |
 | `GetListAsync(request)` | List notifications with optional filters and pagination |
 | `GetAsync(id)` | Get a notification by ID |
-| `GetWithDetailsAsync(id)` | Get a notification with navigation properties (messages, template, etc.) |
+| `GetWithDetailsAsync(id)` | Get a notification with navigation properties (application, type, subtype, etc.) |
 
 ## Sending a notification
 
@@ -157,7 +157,7 @@ foreach (var notification in list.Items)
 ```
 {{end}}
 
-`GetListAsync` returns `PagedResult<NotificationResponse>` with:
+`GetListAsync` returns `PagedResult<NotificationWithDetailsResponse>` with:
 
 | Field | Type | Description |
 |---|---|---|
@@ -175,14 +175,62 @@ Console.WriteLine($"Status: {notification.Status}");
 
 ### Get notification with navigation properties
 
-Returns the notification along with its related messages, template configuration, and other associated data.
+Returns the notification along with its related lookup data (application, type, subtype, country, environment, and channel types).
+
+`GetWithDetailsAsync` returns `NotificationWithDetailsResponse` with:
+
+| Field | Type | Description |
+|---|---|---|
+| `Notification` | `NotificationResponse` | The base notification data |
+| `Application` | `LookupItem` | Application lookup |
+| `NotificationType` | `LookupItem` | Notification type lookup |
+| `NotificationSubtype` | `LookupItem` | Notification subtype lookup |
+| `Country` | `LookupItem` | Country lookup |
+| `DeploymentEnvironment` | `LookupItem` | Deployment environment lookup |
+| `ChannelTypes` | `List<LookupItem>` | Channel types used |
+
+`NotificationResponse` fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `Id` | `Guid` | Notification ID |
+| `Source` | `NotificationSource?` | Origin: `CPaaS` or `API` |
+| `Language` | `string?` | Language code |
+| `Status` | `NotificationStatus?` | `Sending`, `Success`, or `Error` |
+| `NumberOfSuccessMessages` | `int` | Count of successfully delivered messages |
+| `NumberOfTotalMessages` | `int` | Total message count |
+| `ApplicationId` | `Guid` | Application ID |
+| `NotificationTypeId` | `Guid` | Notification type ID |
+| `NotificationSubtypeId` | `Guid` | Notification subtype ID |
+| `CountryId` | `Guid` | Country ID |
+| `CreationTime` | `DateTime` | When the notification was created |
+| `ConcurrencyStamp` | `string?` | Optimistic concurrency stamp |
+
+`LookupItem` fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `Id` | `Guid` | Entity ID |
+| `Name` | `string?` | Display name |
+| `Code` | `string?` | Short code |
+| `DisplayName` | `string?` | Full display name |
 
 {{if SDK == "csharp"}}
 ```csharp
 var details = await client.Notifications.GetWithDetailsAsync(notificationId);
 
-foreach (var message in details.Messages ?? [])
-    Console.WriteLine($"Message {message.Id}: {message.MessageProcessState}");
+// Access the base notification data through details.Notification
+Console.WriteLine($"Status: {details.Notification.Status}");
+Console.WriteLine($"Messages sent: {details.Notification.NumberOfSuccessMessages}/{details.Notification.NumberOfTotalMessages}");
+
+// Access related lookup data
+Console.WriteLine($"Application: {details.Application?.Name}");
+Console.WriteLine($"Country: {details.Country?.Code}");
+Console.WriteLine($"Environment: {details.DeploymentEnvironment?.Name}");
+
+// List the channels used
+foreach (var channel in details.ChannelTypes ?? [])
+    Console.WriteLine($"Channel: {channel.DisplayName}");
 ```
 {{end}}
 
@@ -201,6 +249,7 @@ foreach (var message in details.Messages ?? [])
 | `NotificationSubtypeId` | `Guid?` | Filter by notification subtype |
 | `CountryId` | `Guid?` | Filter by country |
 | `ChannelTypeId` | `Guid?` | Filter by channel |
+| `DeploymentEnvironmentId` | `Guid?` | Filter by deployment environment |
 | `CreationTimeMin` | `DateTime?` | Minimum creation date |
 | `CreationTimeMax` | `DateTime?` | Maximum creation date |
 | `Sorting` | `string?` | Sort expression (e.g., `"CreationTime desc"`) |

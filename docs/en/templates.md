@@ -76,7 +76,27 @@ Console.WriteLine($"Template count: {details.Templates?.Count}");
 
 ## Validating a template
 
-Validation checks whether a template configuration is complete and ready for use. Useful before initiating a send campaign.
+Validation checks whether a template configuration is complete for the given combination of application, country, language, and channels. Use this before initiating a send campaign to detect missing channel configurations early.
+
+`TemplateConfigurationValidationRequest` fields:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `ApplicationCode` | `string` | Yes | Application code (e.g., `"billing"`) |
+| `CountryCode` | `string` | Yes | ISO country code (e.g., `"us"`) |
+| `Language` | `string` | Yes | Language code (e.g., `"en"`) |
+| `NotificationTypeCode` | `string` | Yes | Notification type code (e.g., `"trans"`) |
+| `NotificationSubtypeCode` | `string` | Yes | Notification subtype code (e.g., `"invoice"`) |
+| `DeploymentEnvironmentId` | `Guid` | Yes | Deployment environment ID |
+| `TargetChannels` | `List<TargetChannel>` | No | Channels to validate. If empty, all configured channels are checked. |
+
+`ValidateAsync` returns `TemplateConfigurationValidationResponse`:
+
+| Field | Type | Description |
+|---|---|---|
+| `Status` | `TemplateConfigurationValidationStatus` | `None` = no channels configured, `Partial` = some channels ready, `All` = all channels ready |
+| `ConfiguredChannels` | `List<string>` | Channels that are fully configured |
+| `UnconfiguredChannels` | `List<string>` | Channels that are missing or incomplete |
 
 {{if SDK == "csharp"}}
 ```csharp
@@ -84,29 +104,66 @@ using OneSend2U.Sdk.Templates.Models;
 
 var result = await client.Templates.ValidateAsync(new TemplateConfigurationValidationRequest
 {
-    TemplateConfigurationId = templateId
+    ApplicationCode        = "billing",
+    CountryCode            = "us",
+    Language               = "en",
+    NotificationTypeCode   = "trans",
+    NotificationSubtypeCode = "invoice",
+    DeploymentEnvironmentId = deploymentEnvId,
+    // Optionally limit to specific channels:
+    TargetChannels = [new TargetChannel { Channel = "sms" }, new TargetChannel { Channel = "email" }]
 });
 
-if (result.IsValid)
-{
-    Console.WriteLine("Template is ready to use.");
-}
-else
-{
-    foreach (var error in result.Errors ?? [])
-        Console.WriteLine($"Error: {error}");
-}
+// Status tells you at a glance whether you can send
+Console.WriteLine($"Validation status: {result.Status}");
+
+// See exactly which channels are ready
+foreach (var channel in result.ConfiguredChannels ?? [])
+    Console.WriteLine($"Ready: {channel}");
+
+// See which channels still need configuration
+foreach (var channel in result.UnconfiguredChannels ?? [])
+    Console.WriteLine($"Not configured: {channel}");
 ```
 {{end}}
 
 ## Previewing a template
 
-Renders the template body with sample variable values so you can verify the output before sending.
+Renders the template with sample variable values so you can verify the output before sending. Takes the same lookup fields as `ValidateAsync`.
+
+`GetPreviewAsync` returns `TemplateConfigurationPreviewResponse`:
+
+| Field | Type | Description |
+|---|---|---|
+| `TransactionId` | `string` | Generated transaction ID for this preview |
+| `ApplicationCode` | `string` | Application code |
+| `Language` | `string` | Language code |
+| `CountryCode` | `string` | Country code |
+| `NotificationTypeCode` | `string` | Notification type code |
+| `NotificationSubtypeCode` | `string` | Notification subtype code |
+| `TargetChannels` | `List<PreviewChannel>` | Rendered output per channel |
+| `Recipients` | `List<PreviewRecipient>` | Sample recipients |
+| `TemplateVariables` | `List<PreviewTemplateVariable>` | Key/value pairs used in rendering |
 
 {{if SDK == "csharp"}}
 ```csharp
-var preview = await client.Templates.GetPreviewAsync(templateId);
-Console.WriteLine($"Preview body: {preview.Body}");
+var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationValidationRequest
+{
+    ApplicationCode        = "billing",
+    CountryCode            = "us",
+    Language               = "en",
+    NotificationTypeCode   = "trans",
+    NotificationSubtypeCode = "invoice",
+    DeploymentEnvironmentId = deploymentEnvId
+});
+
+// The rendered output is split by channel — not a single Body field
+foreach (var channel in preview.TargetChannels ?? [])
+    Console.WriteLine($"Channel: {channel.Channel}");
+
+// See which variables were used in the rendering
+foreach (var variable in preview.TemplateVariables ?? [])
+    Console.WriteLine($"{variable.Key} = {variable.Value}");
 ```
 {{end}}
 

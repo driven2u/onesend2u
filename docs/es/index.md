@@ -15,7 +15,7 @@ OneSend2U es una plataforma de comunicaciones que permite enviar mensajes a trav
 
 ## ¿Qué ofrece el SDK?
 
-El paquete NuGet `OneSend2U.Sdk` es un cliente .NET tipado que cubre los **40 endpoints** de la API REST de OneSend2U. Está diseñado para cualquier aplicación .NET 10+ sin dependencias adicionales de frameworks externos.
+El paquete NuGet `OneSend2U.Sdk` es un cliente .NET tipado que cubre los **41 endpoints** de la API REST de OneSend2U. Está diseñado para cualquier aplicación .NET 10+ sin dependencias adicionales de frameworks externos.
 
 ### Características principales
 
@@ -29,7 +29,7 @@ El paquete NuGet `OneSend2U.Sdk` es un cliente .NET tipado que cubre los **40 en
 | **Firma HMAC-SHA256** | Verificación de autenticidad de payloads entrantes |
 | **Resiliencia integrada** | Retry automático y circuit breaker (modo DI) |
 | **Sin dependencias externas** | Compatible con cualquier aplicación .NET 10+ |
-| **40 endpoints** | Notificaciones, plantillas, mensajes, webhooks, contactos, consentimientos y logs |
+| **41 endpoints** | Notificaciones, plantillas, mensajes, webhooks, contactos, consentimientos y logs |
 
 ## Modelo de autenticación
 
@@ -51,7 +51,7 @@ El cliente principal `OneSend2UClient` expone los siguientes sub-clientes:
 | `client.Notifications` | 4 | Envío y consulta de notificaciones |
 | `client.Templates` | 9 | Configuraciones de plantillas |
 | `client.Messages` | 3 | Seguimiento de mensajes individuales |
-| `client.Webhooks` | 6 | Gestión de webhooks |
+| `client.Webhooks` | 7 | Gestión de webhooks |
 | `client.ApiLogs` | 2 | Registros de llamadas a la API |
 | `client.Contacts` | 5 | Gestión de contactos |
 | `client.ContactsGroups` | 6 | Gestión de grupos de contactos |

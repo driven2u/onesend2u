@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for all 40 SDK endpoints, enum definitions, and rate limit headers.
+Complete reference for all 41 SDK endpoints, enum definitions, and rate limit headers.
 
 ## Endpoint table
 
@@ -43,7 +43,7 @@ Base URL: `https://api.onesend2u.com`
 
 **Permissions**: Require the `Cpaas.Messages` permission.
 
-### Webhooks (6)
+### Webhooks (7)
 
 | SDK Method | HTTP Method | Endpoint |
 |---|---|---|
@@ -53,6 +53,7 @@ Base URL: `https://api.onesend2u.com`
 | `client.Webhooks.UpdateAsync(id)` | PUT | `/api/app/webhooks/{id}` |
 | `client.Webhooks.DeleteAsync(id)` | DELETE | `/api/app/webhooks/{id}` |
 | `client.Webhooks.TestAsync()` | POST | `/api/app/webhooks/test` |
+| `client.Webhooks.RotateSigningSecretAsync(id)` | POST | `/api/app/webhooks/{id}/rotate-signing-secret` |
 
 **Permissions**: Require the `Cpaas.Webhooks` permission.
 
@@ -156,6 +157,15 @@ API log entry processing status (`ApiLogResponse.Status`).
 | `Warning` | 11 | Processed with warnings |
 | `Error` | 12 | Processing failed |
 
+### NotificationSource
+
+Origin of a notification or message.
+
+| Value | Int | Description |
+|---|---|---|
+| `CPaaS` | 1 | Sent from the platform UI |
+| `API` | 2 | Sent via the API |
+
 ### RetryStrategy
 
 Webhook retry timing strategy.
@@ -163,6 +173,130 @@ Webhook retry timing strategy.
 | Value | Description |
 |---|---|
 | `FixedDelay` | Fixed delay between retry attempts |
+| `ExponentialBackoff` | Exponentially increasing delay |
+| `LinearBackoff` | Linearly increasing delay |
+| `Jitter` | Randomized delay |
+
+### TemplateButtonType
+
+Type of button in a WhatsApp template.
+
+| Value | Description |
+|---|---|
+| `Attachment` | Triggers a file or media attachment |
+| `Subscribe` | Subscribe the user to a list |
+| `Unsubscribe` | Unsubscribe the user from a list |
+| `Link` | Opens a URL |
+| `Call` | Initiates a phone call |
+| `UserAction` | Custom user-defined action |
+
+### TemplateConfigurationApprovalState
+
+Approval lifecycle state for a template configuration.
+
+| Value | Description |
+|---|---|
+| `NotRequired` | Approval is not required for this template |
+| `UnSubmitted` | Submitted for approval has not been initiated |
+| `Appeal` | Template is under appeal after rejection |
+| `Pending` | Awaiting review |
+| `Approved` | Approved and ready for use |
+| `Rejected` | Rejected by the provider or moderator |
+| `Paused` | Temporarily paused |
+| `Disabled` | Disabled by an administrator |
+| `Deleted` | Soft-deleted |
+
+### TemplateConfigurationCategory
+
+High-level messaging category for a template.
+
+| Value | Description |
+|---|---|
+| `Utility` | Transactional messages (receipts, alerts, confirmations) |
+| `Marketing` | Promotional content |
+| `Authentication` | OTP and authentication messages |
+
+### TemplateConfigurationValidationStatus
+
+Result of `ValidateAsync`.
+
+| Value | Int | Description |
+|---|---|---|
+| `None` | 0 | No channels are configured |
+| `Partial` | 1 | Some channels are configured |
+| `All` | 2 | All requested channels are configured |
+
+### TemplateHeaderType
+
+Type of header content in a template.
+
+| Value | Description |
+|---|---|
+| `Text` | Plain text header |
+| `Media` | Image, video, or document |
+| `Location` | Map/location pin |
+
+### TemplateSection
+
+Section of a template where a variable is defined.
+
+| Value | Description |
+|---|---|
+| `Subject` | Email subject line |
+| `Header` | Template header |
+| `Body` | Main message body |
+| `Footer` | Template footer |
+| `Buttons` | Interactive button text |
+
+### TemplateType
+
+Structural type of a WhatsApp template.
+
+| Value | Description |
+|---|---|
+| `Default` | Standard single-card template |
+| `Carousel` | Multi-card scrollable template |
+| `Coupon` | Discount coupon template |
+
+### TemplateMarketingCategory
+
+Sub-category for marketing templates.
+
+| Value | Description |
+|---|---|
+| `Default` | Standard marketing message |
+| `Catalog` | Product catalog template |
+| `Flow` | Interactive flow template |
+
+### TemplateServiceCategory
+
+Sub-category for utility/service templates.
+
+| Value | Description |
+|---|---|
+| `Default` | Standard utility message |
+| `Flow` | Interactive flow template |
+
+### TemplateAuthenticationCategory
+
+Sub-category for authentication templates.
+
+| Value | Description |
+|---|---|
+| `Default` | Standard OTP / authentication message |
+
+### NotificationVariablesType
+
+How a template variable value is resolved.
+
+| Value | Description |
+|---|---|
+| `Template` | Value comes from the template definition |
+| `Auto` | Value is computed automatically by the platform |
+| `Property` | Value comes from a notification property |
+| `TemplateName` | Value is the template name |
+| `TemplateLanguage` | Value is the template language |
+| `Optional` | Variable is optional and may be omitted |
 
 ### WebhookSignatureValidationError
 
