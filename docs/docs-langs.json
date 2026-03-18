@@ -1,0 +1,14 @@
+{
+  "languages": [
+    { "code": "en", "displayName": "English", "isDefault": true }
+  ],
+  "parameters": [
+    {
+      "name": "SDK",
+      "displayName": "SDK Language",
+      "values": {
+        "csharp": ".NET (C#)"
+      }
+    }
+  ]
+}

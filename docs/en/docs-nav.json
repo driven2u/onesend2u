@@ -1,0 +1,21 @@
+{
+  "items": [
+    { "text": "Overview", "path": "index.md" },
+    { "text": "Getting Started", "path": "getting-started.md" },
+    {
+      "text": "Guides",
+      "items": [
+        { "text": "Notifications", "path": "notifications.md" },
+        { "text": "Templates", "path": "templates.md" },
+        { "text": "Messages", "path": "messages.md" },
+        { "text": "Webhooks", "path": "webhooks.md" },
+        { "text": "Webhook Verification", "path": "webhook-verification.md" },
+        { "text": "Contacts & Groups", "path": "contacts.md" },
+        { "text": "Consents", "path": "consents.md" },
+        { "text": "API Logs", "path": "api-logs.md" }
+      ]
+    },
+    { "text": "Error Handling", "path": "error-handling.md" },
+    { "text": "API Reference", "path": "api-reference.md" }
+  ]
+}
