@@ -240,7 +240,7 @@ Todos los endpoints requieren los siguientes headers:
 
 ## Versionado de API
 
-El SDK **no envía** el parámetro `?api-version` por defecto. El servidor usa `CurrentImplementationApiVersionSelector` para resolver automáticamente la versión más reciente de cada endpoint.
+El SDK **no envía** el parámetro `?api-version` por defecto. El servidor resuelve automáticamente la versión más reciente de cada endpoint.
 
 Si necesitas fijar una versión específica (para testing o compatibilidad), puedes añadir el parámetro manualmente en los requests:
 

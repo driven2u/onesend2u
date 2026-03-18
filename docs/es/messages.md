@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Mensajes
 
 El sub-cliente `client.Messages` permite rastrear el estado de los mensajes individuales que se generan al procesar una notificación. Cada notificación puede generar múltiples mensajes (uno por destinatario y por canal).

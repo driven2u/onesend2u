@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Manejo de Errores y Reintentos
 
 El SDK proporciona una jerarquía de excepciones tipadas para facilitar el manejo granular de errores.

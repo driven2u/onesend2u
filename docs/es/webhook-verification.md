@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Verificación de Firmas de Webhook
 
 Cuando un webhook tiene la firma habilitada (`IsSigningEnabled = true`), OneSend2U firma cada payload enviado usando **HMAC-SHA256**. El SDK incluye la clase estática `WebhookSignatureValidator` para verificar estas firmas.

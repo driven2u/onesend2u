@@ -9,7 +9,7 @@
 
 OneSend2U is a CPaaS (Communications Platform as a Service) platform for sending multi-channel notifications — SMS, Email, and WhatsApp — through multiple providers (Twilio, Infobip, SMTP) from a single unified API.
 
-The **OneSend2U .NET SDK** (`OneSend2U.Sdk`) is a lightweight NuGet package that gives any .NET application typed access to the full OneSend2U API surface. No ABP Framework knowledge or dependencies are required — only .NET 10 and the SDK package.
+The **OneSend2U .NET SDK** (`OneSend2U.Sdk`) is a lightweight NuGet package that gives any .NET application typed access to the full OneSend2U API surface. It requires only .NET 10 and the SDK package — no additional frameworks or dependencies.
 
 ## What the SDK provides
 
@@ -33,7 +33,7 @@ The SDK wraps **40 API endpoints** across 8 sub-clients, all accessible from a s
 - **Webhooks**: Real-time delivery status callbacks with HMAC-SHA256 signature verification
 - **Consent management**: Built-in support for regulatory compliance
 - **Template system**: Dynamic variable substitution with preview and validation
-- **Zero ABP dependencies**: Works in any .NET 10 application
+- **Minimal dependencies**: Works in any .NET 10 application with no extra frameworks required
 
 ## Authentication
 

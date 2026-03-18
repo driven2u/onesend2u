@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Notificaciones
 
 El sub-cliente `client.Notifications` cubre 4 endpoints para enviar y consultar notificaciones.

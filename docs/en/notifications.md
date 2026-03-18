@@ -53,6 +53,12 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 | `FileName` | `string?` | File name including extension |
 | `FileContent` | `string?` | File content encoded as Base64 |
 
+### TargetChannel
+
+| Field | Type | Description |
+|---|---|---|
+| `Channel` | `string?` | Channel type: `"sms"`, `"email"`, or `"whatsapp"` |
+
 ### Send example
 
 {{if SDK == "csharp"}}
@@ -104,6 +110,33 @@ if (response.Warnings?.Count > 0)
 | `CreatedAt` | `DateTime` | When the notification was created on the server |
 | `Warnings` | `List<string>?` | Warnings about partially configured channels |
 
+### Sending with attachments (Email)
+
+{{if SDK == "csharp"}}
+```csharp
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Country             = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "invoice",
+    TargetChannels      = [new TargetChannel { Channel = "email" }],
+    Recipients          = [new NotificationRecipient { Channel = "email", Recipient = "jane@example.com" }],
+    TemplateVariables   = [new Dictionary<string, string> { ["invoice_number"] = "INV-001" }],
+    Attachments =
+    [
+        new NotificationAttachment
+        {
+            FileName    = "invoice-001.pdf",
+            FileContent = Convert.ToBase64String(pdfBytes)
+        }
+    ]
+});
+```
+{{end}}
+
 ## Querying notifications
 
 ### List notifications
@@ -152,3 +185,24 @@ foreach (var message in details.Messages ?? [])
     Console.WriteLine($"Message {message.Id}: {message.MessageProcessState}");
 ```
 {{end}}
+
+## Filter parameters
+
+`GetNotificationsRequest` supports the following filters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `FilterText` | `string?` | Free text search across multiple fields |
+| `Source` | `NotificationSource?` | Origin: `Api` or `Platform` |
+| `Language` | `string?` | Language code |
+| `Status` | `NotificationStatus?` | `Sending`, `Success`, `Error` |
+| `ApplicationId` | `Guid?` | Filter by application |
+| `NotificationTypeId` | `Guid?` | Filter by notification type |
+| `NotificationSubtypeId` | `Guid?` | Filter by notification subtype |
+| `CountryId` | `Guid?` | Filter by country |
+| `ChannelTypeId` | `Guid?` | Filter by channel |
+| `CreationTimeMin` | `DateTime?` | Minimum creation date |
+| `CreationTimeMax` | `DateTime?` | Maximum creation date |
+| `Sorting` | `string?` | Sort expression (e.g., `"CreationTime desc"`) |
+| `SkipCount` | `int` | Items to skip (pagination) |
+| `MaxResultCount` | `int` | Maximum items to return (default: 10) |

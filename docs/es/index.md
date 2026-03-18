@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # OneSend2U SDK — Documentación en Español
 
 Bienvenido a la documentación oficial del SDK de **OneSend2U**, la plataforma CPaaS (Communications Platform as a Service) de Driven2U para el envío de notificaciones multicanal.
@@ -8,7 +15,7 @@ OneSend2U es una plataforma de comunicaciones que permite enviar mensajes a trav
 
 ## ¿Qué ofrece el SDK?
 
-El paquete NuGet `OneSend2U.Sdk` es un cliente .NET tipado que cubre los **40 endpoints** de la API REST de OneSend2U. Está diseñado para cualquier aplicación .NET 10+ sin dependencias de ABP Framework.
+El paquete NuGet `OneSend2U.Sdk` es un cliente .NET tipado que cubre los **40 endpoints** de la API REST de OneSend2U. Está diseñado para cualquier aplicación .NET 10+ sin dependencias adicionales de frameworks externos.
 
 ### Características principales
 
@@ -21,7 +28,7 @@ El paquete NuGet `OneSend2U.Sdk` es un cliente .NET tipado que cubre los **40 en
 | **Webhooks** | Recepción de eventos de estado en tiempo real |
 | **Firma HMAC-SHA256** | Verificación de autenticidad de payloads entrantes |
 | **Resiliencia integrada** | Retry automático y circuit breaker (modo DI) |
-| **Sin dependencias ABP** | Compatible con cualquier aplicación .NET 10+ |
+| **Sin dependencias externas** | Compatible con cualquier aplicación .NET 10+ |
 | **40 endpoints** | Notificaciones, plantillas, mensajes, webhooks, contactos, consentimientos y logs |
 
 ## Modelo de autenticación

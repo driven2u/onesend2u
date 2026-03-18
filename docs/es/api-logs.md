@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Registros de API
 
 El sub-cliente `client.ApiLogs` permite consultar el historial de llamadas realizadas a la API de OneSend2U. Es la herramienta principal para auditoría, depuración y monitoreo de integraciones.

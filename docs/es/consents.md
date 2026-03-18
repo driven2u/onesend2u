@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Consentimientos
 
 El sub-cliente `client.Consents` gestiona los consentimientos de destinatarios para recibir comunicaciones. Cubre 6 endpoints con CRUD completo.

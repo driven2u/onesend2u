@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Webhooks
 
 El sub-cliente `client.Webhooks` permite gestionar webhooks para recibir notificaciones en tiempo real sobre eventos de mensajería. Cubre 6 endpoints con operaciones CRUD completas más un endpoint de prueba.

@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Contactos y Grupos de Contactos
 
 El SDK proporciona dos sub-clientes para gestionar contactos y sus agrupaciones:

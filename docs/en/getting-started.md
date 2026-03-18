@@ -162,6 +162,24 @@ await svc.NotifyCustomerAsync("+15550001234", "Jane Doe", "INV-001");
 ```
 {{end}}
 
+## Using the client in a controller
+
+With DI registration, inject `OneSend2UClient` directly into your services or controllers:
+
+{{if SDK == "csharp"}}
+```csharp
+public class NotifyController(OneSend2UClient client) : ControllerBase
+{
+    [HttpPost("notify")]
+    public async Task<IActionResult> Notify([FromBody] NotifyRequest request)
+    {
+        var result = await client.Notifications.SendAsync(/* ... */);
+        return Ok(result);
+    }
+}
+```
+{{end}}
+
 ## Next steps
 
 - [Notifications](notifications.md) — full send request model, querying

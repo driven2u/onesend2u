@@ -53,6 +53,7 @@ Thrown by the SDK before making an HTTP call when required fields are missing or
 | `401 Unauthorized` | `OneSend2UApiException` | Missing or invalid `X-API-Key` |
 | `403 Forbidden` | `OneSend2UApiException` | Valid API key but insufficient permissions |
 | `404 Not Found` | `OneSend2UApiException` | Entity does not exist or wrong tenant |
+| `409 Conflict` | `OneSend2UApiException` | Concurrency conflict (stale `ConcurrencyStamp`) |
 | `422 Unprocessable Entity` | `OneSend2UApiException` | Server-side validation failure; check `ValidationErrors` |
 | `429 Too Many Requests` | `OneSend2URateLimitException` | Rate limit exceeded; check `RetryAfterSeconds` |
 | `500 Internal Server Error` | `OneSend2UApiException` | Unexpected server error |
@@ -157,3 +158,30 @@ When you register the SDK with `services.AddOneSend2U(...)`, the underlying `Htt
 These policies are transparent to application code. They apply **before** exceptions are thrown — the SDK will retry internally and only throw if all attempts are exhausted.
 
 In **non-DI mode** (`new OneSend2UClient(options)`), no resilience policies are applied. Implement your own retry logic if needed.
+
+### Manual retry with Polly (non-DI mode)
+
+{{if SDK == "csharp"}}
+```csharp
+using Polly;
+using Polly.Retry;
+
+var retryPipeline = new ResiliencePipelineBuilder()
+    .AddRetry(new RetryStrategyOptions
+    {
+        MaxRetryAttempts = 3,
+        Delay            = TimeSpan.FromSeconds(2),
+        BackoffType      = DelayBackoffType.Exponential,
+        ShouldHandle     = new PredicateBuilder()
+            .Handle<OneSend2URateLimitException>()
+            .Handle<HttpRequestException>()
+    })
+    .Build();
+
+await retryPipeline.ExecuteAsync(async ct =>
+{
+    var result = await client.Notifications.SendAsync(request);
+    Console.WriteLine($"Sent: {result.Status}");
+});
+```
+{{end}}

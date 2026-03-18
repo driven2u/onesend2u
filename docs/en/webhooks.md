@@ -83,7 +83,7 @@ Console.WriteLine($"Signing enabled: {webhook.IsSigningEnabled}");
 | `HttpMethod` | `string` | `"POST"` | HTTP method for delivery |
 | `Headers` | `string?` | `null` | Custom headers as a JSON string |
 | `NumberOfRetries` | `int` | `0` | Number of retry attempts on failure |
-| `RetryStrategy` | `RetryStrategy` | `FixedDelay` | Retry timing strategy |
+| `RetryStrategy` | `RetryStrategy` | `FixedDelay` | Retry timing strategy (see table below) |
 | `RetryDelay` | `int` | `60` | Seconds between retries |
 | `Timeout` | `int` | `0` | Request timeout in seconds (0 = no timeout) |
 | `Status` | `bool` | `true` | Whether the webhook is active |
@@ -94,6 +94,15 @@ Console.WriteLine($"Signing enabled: {webhook.IsSigningEnabled}");
 | `UserActions` | `List<string>` | `[]` | User action identifiers |
 | `IsSigningEnabled` | `bool` | `false` | Enable HMAC-SHA256 payload signing |
 | `SigningSecretGracePeriodMinutes` | `int` | `60` | Grace period for secret rotation |
+
+### Retry strategies
+
+| Value | Description |
+|---|---|
+| `FixedDelay` | Fixed delay between retry attempts |
+| `ExponentialBackoff` | Exponentially increasing delay |
+| `LinearBackoff` | Linearly increasing delay |
+| `Jitter` | Randomized delay |
 
 ## Updating a webhook
 

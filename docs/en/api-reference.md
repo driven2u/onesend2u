@@ -204,6 +204,6 @@ Both headers are injected automatically by the SDK on every request.
 
 ## API versioning
 
-The SDK does not send an `api-version` query parameter. The server automatically resolves each endpoint to its latest version using `CurrentImplementationApiVersionSelector`. Breaking changes are handled via SDK major version bumps (SemVer).
+The SDK does not send an `api-version` query parameter. The server automatically resolves each endpoint to its latest version. Breaking changes are handled via SDK major version bumps (SemVer).
 
 You can still pin a version manually using Postman or curl with `?api-version=1.0`.

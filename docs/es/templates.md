@@ -1,3 +1,10 @@
+````json
+//[doc-params]
+{
+    "SDK": ["csharp"]
+}
+````
+
 # Plantillas
 
 El sub-cliente `client.Templates` cubre 9 endpoints para consultar, validar y previsualizar configuraciones de plantillas.
