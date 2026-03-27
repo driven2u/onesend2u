@@ -32,7 +32,8 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 | `Language` | `string` | Yes | Language code (max 5 chars, e.g., `"en"` or `"pt-BR"`) |
 | `NotificationType` | `string` | Yes | Notification type code (max 10 chars, e.g., `"trans"`) |
 | `NotificationSubtype` | `string` | Yes | Notification subtype code (max 10 chars, e.g., `"invoice"`) |
-| `Recipients` | `List<NotificationRecipient>` | Yes | At least one recipient required |
+| `Recipients` | `List<NotificationRecipient>` | Conditional | Recipients list. At least one of `Recipients` or `ContactGroupCodes` is required. |
+| `ContactGroupCodes` | `List<ContactGroupTarget>?` | Conditional | Contact group codes to resolve into recipients. At least one of `Recipients` or `ContactGroupCodes` is required. |
 | `TargetChannels` | `List<TargetChannel>` | No | Limit delivery to specific channels. If empty, all channels configured for the template are used. |
 | `TemplateVariables` | `List<Dictionary<string, string>>` | No | Variable substitutions per recipient |
 | `Attachments` | `List<NotificationAttachment>` | No | Base64-encoded file attachments |
@@ -52,6 +53,13 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 |---|---|---|
 | `FileName` | `string?` | File name including extension |
 | `FileContent` | `string?` | File content encoded as Base64 |
+
+### ContactGroupTarget
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `Code` | `string` | Yes | Contact group code to resolve into recipients (max 10 chars) |
+| `Channel` | `string?` | No | Channel filter (`"SMS"`, `"EMAIL"`, `"WHATSAPP"`). If omitted, all `TargetChannels` are used. |
 
 ### TargetChannel
 
@@ -97,6 +105,79 @@ if (response.Warnings?.Count > 0)
         Console.WriteLine($"Warning: {w}");
 ```
 {{end}}
+
+### Sending to Contact Groups
+
+You can send to all members of one or more contact groups by specifying their codes. Group members are resolved server-side — no need to query the group and build the recipients list manually.
+
+{{if SDK == "csharp"}}
+```csharp
+// Send to a contact group (all TargetChannels)
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Country             = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "invoice",
+    TargetChannels      = [new TargetChannel { Channel = "email" }],
+    ContactGroupCodes   =
+    [
+        new ContactGroupTarget { Code = "VIP" }  // all TargetChannels
+    ],
+    TemplateVariables =
+    [
+        new Dictionary<string, string>
+        {
+            ["customer_name"] = "Valued Customer",
+            ["invoice_number"] = "INV-001"
+        }
+    ]
+});
+```
+{{end}}
+
+You can also mix explicit recipients with contact groups. Duplicates are automatically removed by `(channel, destination)`:
+
+{{if SDK == "csharp"}}
+```csharp
+// Mix explicit recipients + contact groups with channel filter
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Country             = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "invoice",
+    TargetChannels      =
+    [
+        new TargetChannel { Channel = "email" },
+        new TargetChannel { Channel = "sms" }
+    ],
+    Recipients =
+    [
+        new NotificationRecipient { Channel = "email", Recipient = "cfo@example.com" }
+    ],
+    ContactGroupCodes =
+    [
+        new ContactGroupTarget { Code = "FINANCE", Channel = "EMAIL" },  // email only
+        new ContactGroupTarget { Code = "MGMT" }                         // all channels
+    ],
+    TemplateVariables =
+    [
+        new Dictionary<string, string>
+        {
+            ["customer_name"] = "Team",
+            ["invoice_number"] = "INV-002"
+        }
+    ]
+});
+```
+{{end}}
+
+> **Note:** If a contact group code does not exist or has no members, a warning is included in the response but the notification is still processed for any valid recipients (partial success). Contacts without the required channel data (e.g., no phone number for SMS) are silently skipped.
 
 ### Response model
 

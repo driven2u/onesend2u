@@ -138,11 +138,12 @@ using OneSend2U.Sdk.ContactsGroups.Models;
 var group = await client.ContactsGroups.CreateAsync(new CreateContactsGroupRequest
 {
     Name        = "Newsletter Subscribers",
+    Code        = "NEWSLTTR",   // unique per tenant, max 10 chars
     Description = "Opted-in customers for the monthly newsletter",
     ContactIds  = [contactId1, contactId2]
 });
 
-Console.WriteLine($"Group created: {group.Id} — {group.Name}");
+Console.WriteLine($"Group created: {group.Id} — {group.Name} ({group.Code})");
 ```
 {{end}}
 
@@ -157,7 +158,7 @@ var list = await client.ContactsGroups.GetListAsync(new GetContactsGroupsRequest
 });
 
 foreach (var group in list.Items)
-    Console.WriteLine($"{group.Id} — {group.Name}");
+    Console.WriteLine($"{group.Id} — {group.Name} ({group.Code})");
 ```
 {{end}}
 
@@ -182,6 +183,7 @@ var existing = await client.ContactsGroups.GetAsync(groupId);
 await client.ContactsGroups.UpdateAsync(groupId, new UpdateContactsGroupRequest
 {
     Name             = existing.Name,
+    Code             = existing.Code,
     Description      = "Updated description",
     ContactIds       = [contactId1, contactId2, contactId3],
     ConcurrencyStamp = existing.ConcurrencyStamp

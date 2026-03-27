@@ -157,10 +157,11 @@ using OneSend2U.Sdk.ContactsGroups.Models;
 var grupo = await client.ContactsGroups.CreateAsync(new CreateContactsGroupRequest
 {
     Name = "Clientes Premium México",
+    Code = "NEWSLTTR",   // único por tenant, máx. 10 caracteres
     ContactIds = [contactoId1, contactoId2, contactoId3]
 });
 
-Console.WriteLine($"Grupo creado: {grupo.Id} — {grupo.Name}");
+Console.WriteLine($"Grupo creado: {grupo.Id} — {grupo.Name} ({grupo.Code})");
 ```
 {{end}}
 
@@ -189,7 +190,7 @@ var resultado = await client.ContactsGroups.GetListAsync(new GetContactsGroupsRe
 
 foreach (var grupo in resultado.Items)
 {
-    Console.WriteLine($"{grupo.Name} — {grupo.CreationTime}");
+    Console.WriteLine($"{grupo.Name} ({grupo.Code}) — {grupo.CreationTime}");
 }
 ```
 {{end}}
@@ -219,6 +220,7 @@ var actual = await client.ContactsGroups.GetAsync(grupoId);
 await client.ContactsGroups.UpdateAsync(grupoId, new UpdateContactsGroupRequest
 {
     Name = "Clientes VIP México",             // Nuevo nombre
+    Code = actual.Code,
     ContactIds = [contactoId1, contactoId4],  // Nueva lista de contactos
     ConcurrencyStamp = actual.ConcurrencyStamp
 });

@@ -45,8 +45,11 @@ public class SendNotificationRequest
     // Canales destino. Opcional; si está vacío se usan todos los canales configurados en la plantilla.
     public List<TargetChannel> TargetChannels { get; set; }
 
-    // Destinatarios. Requerido, al menos 1.
+    // Destinatarios. Condicional: al menos uno de Recipients o ContactGroupCodes es obligatorio.
     public List<NotificationRecipient> Recipients { get; set; }
+
+    // Códigos de grupos de contacto a resolver en destinatarios. Condicional: al menos uno de Recipients o ContactGroupCodes es obligatorio.
+    public List<ContactGroupTarget>? ContactGroupCodes { get; set; }
 
     // Variables de sustitución de plantilla. Una entrada por destinatario.
     public List<Dictionary<string, string>> TemplateVariables { get; set; }
@@ -62,6 +65,13 @@ public class SendNotificationRequest
 }
 ```
 {{end}}
+
+### ContactGroupTarget
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `Code` | `string` | Sí | Código del grupo de contacto a resolver (máx. 10 caracteres) |
+| `Channel` | `string?` | No | Filtro de canal (`"SMS"`, `"EMAIL"`, `"WHATSAPP"`). Si se omite, se usan todos los `TargetChannels`. |
 
 ### Canales disponibles
 
@@ -102,6 +112,79 @@ Console.WriteLine($"Estado: {result.Status}");        // "Accepted"
 Console.WriteLine($"Creado: {result.CreatedAt}");
 ```
 {{end}}
+
+### Envío a Grupos de Contacto
+
+Puedes enviar a todos los miembros de uno o más grupos de contacto especificando sus códigos. Los miembros se resuelven en el servidor — no necesitas consultar el grupo y construir la lista de destinatarios manualmente.
+
+{{if SDK == "csharp"}}
+```csharp
+// Enviar a un grupo de contacto (todos los TargetChannels)
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Country             = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "invoice",
+    TargetChannels      = [new TargetChannel { Channel = "email" }],
+    ContactGroupCodes   =
+    [
+        new ContactGroupTarget { Code = "VIP" }  // todos los TargetChannels
+    ],
+    TemplateVariables =
+    [
+        new Dictionary<string, string>
+        {
+            ["customer_name"] = "Cliente Preferente",
+            ["invoice_number"] = "INV-001"
+        }
+    ]
+});
+```
+{{end}}
+
+También puedes combinar destinatarios explícitos con grupos de contacto. Los duplicados se eliminan automáticamente por `(canal, destino)`:
+
+{{if SDK == "csharp"}}
+```csharp
+// Combinar destinatarios explícitos + grupos de contacto con filtro de canal
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Country             = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "invoice",
+    TargetChannels      =
+    [
+        new TargetChannel { Channel = "email" },
+        new TargetChannel { Channel = "sms" }
+    ],
+    Recipients =
+    [
+        new NotificationRecipient { Channel = "email", Recipient = "cfo@example.com" }
+    ],
+    ContactGroupCodes =
+    [
+        new ContactGroupTarget { Code = "FINANCE", Channel = "EMAIL" },  // solo email
+        new ContactGroupTarget { Code = "MGMT" }                         // todos los canales
+    ],
+    TemplateVariables =
+    [
+        new Dictionary<string, string>
+        {
+            ["customer_name"] = "Equipo",
+            ["invoice_number"] = "INV-002"
+        }
+    ]
+});
+```
+{{end}}
+
+> **Nota:** Si un código de grupo de contacto no existe o no tiene miembros, se incluye una advertencia en la respuesta pero la notificación se procesa para los destinatarios válidos (éxito parcial). Los contactos sin los datos del canal requerido (ej: sin teléfono para SMS) se omiten silenciosamente.
 
 ### Respuesta de envío
 
