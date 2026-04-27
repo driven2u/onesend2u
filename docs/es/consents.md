@@ -39,7 +39,7 @@ Un consentimiento vincula un destinatario con un contexto específico:
 |---|---|
 | `Recipient` | Dirección del destinatario (teléfono, email) |
 | `IsConsented` | `true` = ha consentido, `false` = ha revocado |
-| `CountryId` | País al que aplica el consentimiento |
+| `RegionId` | Región a la que aplica el consentimiento |
 | `ApplicationId` | Aplicación a la que aplica |
 | `NotificationTypeId` | Tipo de notificación para el que aplica |
 | `NotificationSubtypeId` | Subtipo de notificación para el que aplica |
@@ -103,7 +103,7 @@ public class CreateConsentRequest
 {
     public string? Recipient { get; set; }              // Dirección del destinatario. Requerido.
     public bool IsConsented { get; set; }               // true = consentido. Por defecto: true.
-    public Guid? CountryId { get; set; }
+    public Guid? RegionId { get; set; }
     public Guid? ApplicationId { get; set; }
     public Guid? NotificationTypeId { get; set; }
     public Guid? NotificationSubtypeId { get; set; }
@@ -231,7 +231,7 @@ public class ConsentResponse
     public Guid Id { get; set; }
     public string? Recipient { get; set; }
     public bool IsConsented { get; set; }
-    public Guid? CountryId { get; set; }
+    public Guid? RegionId { get; set; }
     public Guid? ApplicationId { get; set; }
     public Guid? NotificationTypeId { get; set; }
     public Guid? NotificationSubtypeId { get; set; }

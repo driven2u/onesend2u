@@ -25,7 +25,7 @@ Cada llamada al endpoint `/api/app/notifications/send` genera automáticamente u
 | `CorrelationId` | ID de correlación para rastreo distribuido |
 | `TransactionId` | ID de transacción enviado por el cliente |
 | `ApplicationCode` | Código de aplicación del request |
-| `CountryCode` | Código de país del request |
+| `RegionCode` | Código de región del request |
 | `NotificationTypeCode` | Tipo de notificación del request |
 | `NotificationSubtypeCode` | Subtipo de notificación del request |
 | `LanguageCode` | Idioma del request |
@@ -109,7 +109,7 @@ foreach (var entrada in log.StatusHistory)
 | `CorrelationId` | `string?` | Filtrar por ID de correlación |
 | `TransactionId` | `string?` | Filtrar por ID de transacción |
 | `ApplicationCode` | `string?` | Filtrar por código de aplicación |
-| `CountryCode` | `string?` | Filtrar por código de país |
+| `RegionCode` | `string?` | Filtrar por código de región |
 | `NotificationTypeCode` | `string?` | Filtrar por tipo de notificación |
 | `NotificationSubtypeCode` | `string?` | Filtrar por subtipo |
 | `LanguageCode` | `string?` | Filtrar por idioma |

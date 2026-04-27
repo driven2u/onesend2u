@@ -71,7 +71,7 @@ try
     {
         TransactionId       = Guid.NewGuid().ToString(),
         Application         = "billing",
-        Country             = "us",
+        Region              = "us",
         Language            = "en",
         NotificationType    = "trans",
         NotificationSubtype = "invoice",

@@ -109,7 +109,7 @@ public class NotificationService(OneSend2UClient client)
             {
                 TransactionId = Guid.NewGuid().ToString(),  // ID único para rastreo
                 Application = "myapp",                       // Código de aplicación (max 10 chars)
-                Country = "br",                              // ISO 3166-1 alpha-2
+                Region = "br",                               // Código de región (alfanumérico, máx. 10 caracteres)
                 Language = "pt-BR",                          // Código de idioma (max 5 chars)
                 NotificationType = "trans",                  // Tipo de notificación (max 10 chars)
                 NotificationSubtype = "invoice",             // Subtipo (max 10 chars)

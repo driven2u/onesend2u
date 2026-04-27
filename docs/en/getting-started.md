@@ -112,7 +112,7 @@ public class InvoiceNotificationService(OneSend2UClient client)
         {
             TransactionId       = Guid.NewGuid().ToString(),  // unique per call
             Application         = "billing",
-            Country             = "us",
+            Region              = "us",
             Language            = "en",
             NotificationType    = "trans",
             NotificationSubtype = "invoice",

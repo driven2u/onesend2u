@@ -125,7 +125,7 @@ public class MessageWithDetailsResponse
     public LookupItem ChannelType { get; set; }
     public LookupItem NotificationType { get; set; }
     public LookupItem NotificationSubtype { get; set; }
-    public LookupItem Country { get; set; }
+    public LookupItem Region { get; set; }
     public LookupItem Provider { get; set; }
     public LookupItem DeploymentEnvironment { get; set; }
 }
@@ -144,7 +144,7 @@ public class MessageResponse
     public MessageProcessState? MessageProcessState { get; set; }
     public string? Language { get; set; }
     public NotificationSource? NotificationSource { get; set; }
-    public Guid CountryId { get; set; }
+    public Guid RegionId { get; set; }
     public Guid ApplicationId { get; set; }
     public Guid ChannelTypeId { get; set; }
     public Guid NotificationTypeId { get; set; }
@@ -168,7 +168,7 @@ public class MessageResponse
 | `MessageProcessState` | `MessageProcessState?` | Estado del mensaje |
 | `Language` | `string?` | Código de idioma |
 | `NotificationSource` | `NotificationSource?` | Origen: `CPaaS` o `Api` |
-| `CountryId` | `Guid?` | Filtrar por país |
+| `RegionId` | `Guid?` | Filtrar por región |
 | `ApplicationId` | `Guid?` | Filtrar por aplicación |
 | `ChannelTypeId` | `Guid?` | Filtrar por canal (SMS, Email, WhatsApp) |
 | `NotificationTypeId` | `Guid?` | Filtrar por tipo de notificación |

@@ -28,7 +28,7 @@ The `client.Templates` sub-client provides access to template configurations and
 Template configurations follow this naming pattern:
 
 ```
-{InstanceCode}_{ApplicationCode}_{NotificationTypeCode}_{NotificationSubtypeCode}_{CountryCode}_{LanguageCode}_{ProviderCode}_{ChannelTypeCode}_v{Version}
+{InstanceCode}_{ApplicationCode}_{NotificationTypeCode}_{NotificationSubtypeCode}_{RegionCode}_{LanguageCode}_{ProviderCode}_{ChannelTypeCode}_v{Version}
 ```
 
 Example: `prd_billing_trans_invoice_us_en_twilio_sms_v1`
@@ -76,14 +76,14 @@ Console.WriteLine($"Template count: {details.Templates?.Count}");
 
 ## Validating a template
 
-Validation checks whether a template configuration is complete for the given combination of application, country, language, and channels. Use this before initiating a send campaign to detect missing channel configurations early.
+Validation checks whether a template configuration is complete for the given combination of application, region, language, and channels. Use this before initiating a send campaign to detect missing channel configurations early.
 
 `TemplateConfigurationValidationRequest` fields:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `ApplicationCode` | `string` | Yes | Application code (e.g., `"billing"`) |
-| `CountryCode` | `string` | Yes | ISO country code (e.g., `"us"`) |
+| `RegionCode` | `string` | Yes | Region code (alphanumeric, max 10 characters, e.g., `"us"`) |
 | `Language` | `string` | Yes | Language code (e.g., `"en"`) |
 | `NotificationTypeCode` | `string` | Yes | Notification type code (e.g., `"trans"`) |
 | `NotificationSubtypeCode` | `string` | Yes | Notification subtype code (e.g., `"invoice"`) |
@@ -105,7 +105,7 @@ using OneSend2U.Sdk.Templates.Models;
 var result = await client.Templates.ValidateAsync(new TemplateConfigurationValidationRequest
 {
     ApplicationCode        = "billing",
-    CountryCode            = "us",
+    RegionCode             = "us",
     Language               = "en",
     NotificationTypeCode   = "trans",
     NotificationSubtypeCode = "invoice",
@@ -138,7 +138,7 @@ Renders the template with sample variable values so you can verify the output be
 | `TransactionId` | `string` | Generated transaction ID for this preview |
 | `ApplicationCode` | `string` | Application code |
 | `Language` | `string` | Language code |
-| `CountryCode` | `string` | Country code |
+| `RegionCode` | `string` | Region code |
 | `NotificationTypeCode` | `string` | Notification type code |
 | `NotificationSubtypeCode` | `string` | Notification subtype code |
 | `TargetChannels` | `List<PreviewChannel>` | Rendered output per channel |
@@ -150,7 +150,7 @@ Renders the template with sample variable values so you can verify the output be
 var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationValidationRequest
 {
     ApplicationCode        = "billing",
-    CountryCode            = "us",
+    RegionCode             = "us",
     Language               = "en",
     NotificationTypeCode   = "trans",
     NotificationSubtypeCode = "invoice",

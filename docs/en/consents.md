@@ -31,7 +31,7 @@ When a message is processed, the platform checks the consent status for the reci
 | `Id` | `Guid` | Consent ID |
 | `Recipient` | `string?` | Recipient address (phone, email, etc.) |
 | `IsConsented` | `bool` | `true` if the recipient has consented; `false` if opted out |
-| `CountryId` | `Guid?` | Country scope (optional) |
+| `RegionId` | `Guid?` | Region scope (optional) |
 | `ApplicationId` | `Guid?` | Application scope (optional) |
 | `NotificationTypeId` | `Guid?` | Notification type scope (optional) |
 | `NotificationSubtypeId` | `Guid?` | Notification subtype scope (optional) |
@@ -104,7 +104,7 @@ Console.WriteLine($"Consented: {consent.IsConsented}");
 
 ## Getting a consent with navigation properties
 
-Returns the consent record along with its related country, application, channel type, and environment objects.
+Returns the consent record along with its related region, application, channel type, and environment objects.
 
 {{if SDK == "csharp"}}
 ```csharp

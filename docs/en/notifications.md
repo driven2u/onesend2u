@@ -28,7 +28,7 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 |---|---|---|---|
 | `TransactionId` | `string` | Yes | Unique identifier for this request (max 100 chars). Use for idempotency and tracing. |
 | `Application` | `string` | Yes | Application code (max 10 chars, e.g., `"billing"`) |
-| `Country` | `string` | Yes | ISO 3166-1 alpha-2 country code (max 2 chars, e.g., `"us"`) |
+| `Region` | `string` | Yes | Region code (alphanumeric, max 10 characters, e.g., `"us"`) |
 | `Language` | `string` | Yes | Language code (max 5 chars, e.g., `"en"` or `"pt-BR"`) |
 | `NotificationType` | `string` | Yes | Notification type code (max 10 chars, e.g., `"trans"`) |
 | `NotificationSubtype` | `string` | Yes | Notification subtype code (max 10 chars, e.g., `"invoice"`) |
@@ -39,6 +39,8 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 | `Attachments` | `List<NotificationAttachment>` | No | Base64-encoded file attachments |
 | `ExternalMessageId` | `string?` | No | External correlation ID |
 | `ExternalSequenceNumber` | `string?` | No | External ordering sequence number |
+| `SenderAddress` | `string?` | No | Sender address override (Email only). Domain must be Verified for the resolved Connection. See [Sender override](#sender-override). |
+| `SenderName` | `string?` | No | Sender display name override (Email + SMS). See [Sender override](#sender-override). |
 
 ### NotificationRecipient
 
@@ -77,7 +79,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "billing",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
@@ -117,7 +119,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "billing",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
@@ -147,7 +149,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "billing",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
@@ -191,6 +193,62 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 | `CreatedAt` | `DateTime` | When the notification was created on the server |
 | `Warnings` | `List<string>?` | Warnings about partially configured channels |
 
+### Sender override
+
+The default sender per channel is configured at the application level (Communication Channels tab). For one-off requests you can override it with the `SenderAddress` and `SenderName` fields. Per-channel policies apply:
+
+| Channel | `SenderAddress` | `SenderName` |
+|---|---|---|
+| Email | Allowed. The domain must be Verified in SenderDomain for the connection's external account; otherwise rejected with `Cpaas:ApplicationChannel:00003`. | Allowed. |
+| SMS | Rejected with `Cpaas:SenderOverride:00001`. | Allowed (best-effort). Applied only when the destination country supports alphanumeric senders; silently discarded otherwise — the message is still delivered using the phone-number sender. |
+| WhatsApp | Rejected with `Cpaas:SenderOverride:00001`. | Rejected with `Cpaas:SenderOverride:00002`. |
+
+The override applies to the whole notification (all recipients in the request). Resolution priority (most specific wins): API request → Template configuration → Application channel default → Connection default sender.
+
+{{if SDK == "csharp"}}
+```csharp
+// Email — override From address and name for this request only
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Region              = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "reset_pwd",
+    TargetChannels      = [new TargetChannel { Channel = "email" }],
+    Recipients          = [new NotificationRecipient { Channel = "email", Recipient = "jane@example.com" }],
+    SenderAddress       = "security@your-verified-domain.com",
+    SenderName          = "Acme Security",
+    TemplateVariables   = [new Dictionary<string, string> { ["reset_link"] = "https://..." }]
+});
+```
+
+```csharp
+// SMS — only the display name can be overridden; SenderAddress is rejected for SMS
+var response = await client.Notifications.SendAsync(new SendNotificationRequest
+{
+    TransactionId       = Guid.NewGuid().ToString(),
+    Application         = "billing",
+    Region              = "us",
+    Language            = "en",
+    NotificationType    = "trans",
+    NotificationSubtype = "otp",
+    TargetChannels      = [new TargetChannel { Channel = "sms" }],
+    Recipients          = [new NotificationRecipient { Channel = "sms", Recipient = "+15550001234" }],
+    SenderName          = "Acme",
+    TemplateVariables   = [new Dictionary<string, string> { ["code"] = "482910" }]
+});
+```
+{{end}}
+
+| Error code | When |
+|---|---|
+| `Cpaas:SenderOverride:00001` | Sent `SenderAddress` to a channel that does not allow it (SMS, WhatsApp). |
+| `Cpaas:SenderOverride:00002` | Sent `SenderName` to a channel that does not allow it (WhatsApp). |
+| `Cpaas:ApplicationChannel:00003` | Sent an Email `SenderAddress` whose domain is not Verified for the resolved Connection. |
+| `Cpaas:Integration:00116` | Sent a malformed Email address. |
+
 ### Sending with attachments (Email)
 
 {{if SDK == "csharp"}}
@@ -199,7 +257,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "billing",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
@@ -256,7 +314,7 @@ Console.WriteLine($"Status: {notification.Status}");
 
 ### Get notification with navigation properties
 
-Returns the notification along with its related lookup data (application, type, subtype, country, environment, and channel types).
+Returns the notification along with its related lookup data (application, type, subtype, region, environment, and channel types).
 
 `GetWithDetailsAsync` returns `NotificationWithDetailsResponse` with:
 
@@ -266,7 +324,7 @@ Returns the notification along with its related lookup data (application, type, 
 | `Application` | `LookupItem` | Application lookup |
 | `NotificationType` | `LookupItem` | Notification type lookup |
 | `NotificationSubtype` | `LookupItem` | Notification subtype lookup |
-| `Country` | `LookupItem` | Country lookup |
+| `Region` | `LookupItem` | Region lookup |
 | `DeploymentEnvironment` | `LookupItem` | Deployment environment lookup |
 | `ChannelTypes` | `List<LookupItem>` | Channel types used |
 
@@ -283,7 +341,7 @@ Returns the notification along with its related lookup data (application, type, 
 | `ApplicationId` | `Guid` | Application ID |
 | `NotificationTypeId` | `Guid` | Notification type ID |
 | `NotificationSubtypeId` | `Guid` | Notification subtype ID |
-| `CountryId` | `Guid` | Country ID |
+| `RegionId` | `Guid` | Region ID |
 | `CreationTime` | `DateTime` | When the notification was created |
 | `ConcurrencyStamp` | `string?` | Optimistic concurrency stamp |
 
@@ -306,7 +364,7 @@ Console.WriteLine($"Messages sent: {details.Notification.NumberOfSuccessMessages
 
 // Access related lookup data
 Console.WriteLine($"Application: {details.Application?.Name}");
-Console.WriteLine($"Country: {details.Country?.Code}");
+Console.WriteLine($"Region: {details.Region?.Code}");
 Console.WriteLine($"Environment: {details.DeploymentEnvironment?.Name}");
 
 // List the channels used
@@ -328,7 +386,7 @@ foreach (var channel in details.ChannelTypes ?? [])
 | `ApplicationId` | `Guid?` | Filter by application |
 | `NotificationTypeId` | `Guid?` | Filter by notification type |
 | `NotificationSubtypeId` | `Guid?` | Filter by notification subtype |
-| `CountryId` | `Guid?` | Filter by country |
+| `RegionId` | `Guid?` | Filter by region |
 | `ChannelTypeId` | `Guid?` | Filter by channel |
 | `DeploymentEnvironmentId` | `Guid?` | Filter by deployment environment |
 | `CreationTimeMin` | `DateTime?` | Minimum creation date |

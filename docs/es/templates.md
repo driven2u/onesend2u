@@ -30,7 +30,7 @@ El sub-cliente `client.Templates` cubre 9 endpoints para consultar, validar y pr
 Las plantillas siguen este formato de nomenclatura:
 
 ```
-{InstanceCode}_{ApplicationCode}_{NotificationTypeCode}_{NotificationSubtypeCode}_{CountryCode}_{LanguageCode}_{ProviderCode}_{ChannelTypeCode}_v{Version}
+{InstanceCode}_{ApplicationCode}_{NotificationTypeCode}_{NotificationSubtypeCode}_{RegionCode}_{LanguageCode}_{ProviderCode}_{ChannelTypeCode}_v{Version}
 ```
 
 **Ejemplo:**
@@ -44,7 +44,7 @@ prd_myapp_transactional_invoice_br_pt_twilio_sms_v1
 | `ApplicationCode` | `myapp` | Código de la aplicación |
 | `NotificationTypeCode` | `transactional` | Tipo de notificación |
 | `NotificationSubtypeCode` | `invoice` | Subtipo de notificación |
-| `CountryCode` | `br` | Código de país ISO |
+| `RegionCode` | `br` | Código de región (alfanumérico, máx. 10 caracteres) |
 | `LanguageCode` | `pt` | Código de idioma |
 | `ProviderCode` | `twilio` | Proveedor de mensajería |
 | `ChannelTypeCode` | `sms` | Canal de entrega |
@@ -76,9 +76,9 @@ Antes de enviar, puedes verificar que existe una plantilla configurada para los 
 ```csharp
 var validacion = await client.Templates.ValidateAsync(new TemplateConfigurationValidationRequest
 {
-    // Códigos de la aplicación, país, idioma, tipo y subtipo (todos requeridos)
+    // Códigos de la aplicación, región, idioma, tipo y subtipo (todos requeridos)
     ApplicationCode = "myapp",
-    CountryCode = "br",
+    RegionCode = "br",
     Language = "pt-BR",
     NotificationTypeCode = "trans",
     NotificationSubtypeCode = "invoice",
@@ -101,7 +101,7 @@ Console.WriteLine($"Canales sin configurar: {string.Join(", ", validacion.Unconf
 public class TemplateConfigurationValidationRequest
 {
     public string ApplicationCode { get; set; }           // Código de aplicación. Requerido.
-    public string CountryCode { get; set; }               // Código de país ISO. Requerido.
+    public string RegionCode { get; set; }                // Código de región (alfanumérico, máx. 10 caracteres). Requerido.
     public string Language { get; set; }                  // Código de idioma. Requerido.
     public string NotificationTypeCode { get; set; }      // Código de tipo. Requerido.
     public string NotificationSubtypeCode { get; set; }   // Código de subtipo. Requerido.
@@ -134,7 +134,7 @@ Genera el mensaje final con las variables sustituidas, sin enviarlo. Útil para 
 var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationPreviewRequest
 {
     ApplicationCode = "myapp",
-    CountryCode = "br",
+    RegionCode = "br",
     Language = "pt-BR",
     NotificationTypeCode = "trans",
     NotificationSubtypeCode = "invoice",
@@ -144,7 +144,7 @@ var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationPr
 
 // Datos de la configuración de plantilla usada
 Console.WriteLine($"Transaction ID: {preview.TransactionId}");
-Console.WriteLine($"App: {preview.ApplicationCode} — País: {preview.CountryCode}");
+Console.WriteLine($"App: {preview.ApplicationCode} — Región: {preview.RegionCode}");
 
 // preview.Recipients contiene una lista de destinatarios de muestra
 foreach (var recipient in preview.Recipients)
@@ -172,7 +172,7 @@ public class TemplateConfigurationPreviewResponse
     public string? TransactionId { get; set; }
     public string? ApplicationCode { get; set; }
     public string? Language { get; set; }
-    public string? CountryCode { get; set; }
+    public string? RegionCode { get; set; }
     public string? NotificationTypeCode { get; set; }
     public string? NotificationSubtypeCode { get; set; }
     public List<PreviewChannel> TargetChannels { get; set; }        // Canales con contenido renderizado

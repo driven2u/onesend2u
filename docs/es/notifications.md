@@ -30,8 +30,8 @@ public class SendNotificationRequest
     // Código de aplicación. Requerido. Máx. 10 caracteres.
     public string Application { get; set; }
 
-    // Código de país (ISO 3166-1 alpha-2). Requerido. Máx. 2 caracteres.
-    public string Country { get; set; }
+    // Código de región (alfanumérico, máx. 10 caracteres). Requerido.
+    public string Region { get; set; }
 
     // Código de idioma (ej. "en", "pt-BR"). Requerido. Máx. 5 caracteres.
     public string Language { get; set; }
@@ -62,9 +62,35 @@ public class SendNotificationRequest
 
     // Número de secuencia externo.
     public string? ExternalSequenceNumber { get; set; }
+
+    // Override de dirección del remitente (solo Email). El dominio debe estar Verificado en
+    // SenderDomain para la cuenta externa de la Connection resuelta. Ver "Override de remitente".
+    public string? SenderAddress { get; set; }
+
+    // Override de nombre del remitente (Email + SMS). Ver "Override de remitente".
+    public string? SenderName { get; set; }
 }
 ```
 {{end}}
+
+### Override de remitente
+
+El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con `SenderAddress` y `SenderName`. Políticas por canal:
+
+| Canal | `SenderAddress` | `SenderName` |
+|---|---|---|
+| Email | Permitido. El dominio debe estar Verificado en SenderDomain para la cuenta externa de la Connection. En caso contrario se rechaza con `Cpaas:ApplicationChannel:00003`. | Permitido. |
+| SMS | Rechazado con `Cpaas:SenderOverride:00001`. | Permitido (best-effort). Solo se aplica si el país destino soporta remitentes alfanuméricos; si no, se descarta silenciosamente y el mensaje se envía con el número de teléfono. |
+| WhatsApp | Rechazado con `Cpaas:SenderOverride:00001`. | Rechazado con `Cpaas:SenderOverride:00002`. |
+
+El override se aplica a toda la notificación (todos los destinatarios). Prioridad de resolución (más específico gana): petición API → configuración de plantilla → canal de la aplicación → remitente por defecto de la Connection.
+
+| Código de error | Cuándo |
+|---|---|
+| `Cpaas:SenderOverride:00001` | `SenderAddress` enviado a un canal que no lo permite (SMS, WhatsApp). |
+| `Cpaas:SenderOverride:00002` | `SenderName` enviado a un canal que no lo permite (WhatsApp). |
+| `Cpaas:ApplicationChannel:00003` | `SenderAddress` de Email cuyo dominio no está Verificado para la Connection resuelta. |
+| `Cpaas:Integration:00116` | Formato de email inválido. |
 
 ### ContactGroupTarget
 
@@ -89,7 +115,7 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId = Guid.NewGuid().ToString(),
     Application = "myapp",
-    Country = "mx",
+    Region = "mx",
     Language = "es",
     NotificationType = "trans",
     NotificationSubtype = "welcome",
@@ -124,7 +150,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "billing",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
@@ -154,7 +180,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "billing",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
@@ -209,7 +235,7 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId = Guid.NewGuid().ToString(),
     Application = "myapp",
-    Country = "ar",
+    Region = "ar",
     Language = "es",
     NotificationType = "trans",
     NotificationSubtype = "invoice",
@@ -283,7 +309,7 @@ Console.WriteLine($"Mensajes exitosos: {detalle.Notification.NumberOfSuccessMess
 Console.WriteLine($"Aplicación: {detalle.Application?.DisplayName}");
 Console.WriteLine($"Tipo: {detalle.NotificationType?.DisplayName}");
 Console.WriteLine($"Subtipo: {detalle.NotificationSubtype?.DisplayName}");
-Console.WriteLine($"País: {detalle.Country?.Code}");
+Console.WriteLine($"Región: {detalle.Region?.Code}");
 Console.WriteLine($"Entorno: {detalle.DeploymentEnvironment?.Name}");
 
 // ChannelTypes es una lista de LookupItem (puede tener SMS, Email, WhatsApp)
@@ -305,7 +331,7 @@ public class NotificationWithDetailsResponse
     public LookupItem Application { get; set; }
     public LookupItem NotificationType { get; set; }
     public LookupItem NotificationSubtype { get; set; }
-    public LookupItem Country { get; set; }
+    public LookupItem Region { get; set; }
     public LookupItem DeploymentEnvironment { get; set; }
     public List<LookupItem> ChannelTypes { get; set; }
 }
@@ -329,7 +355,7 @@ public class NotificationResponse
     public Guid ApplicationId { get; set; }
     public Guid NotificationTypeId { get; set; }
     public Guid NotificationSubtypeId { get; set; }
-    public Guid CountryId { get; set; }
+    public Guid RegionId { get; set; }
     public DateTime CreationTime { get; set; }
     public string? ConcurrencyStamp { get; set; }
 }
@@ -347,7 +373,7 @@ public class NotificationResponse
 | `ApplicationId` | `Guid?` | Filtrar por aplicación |
 | `NotificationTypeId` | `Guid?` | Filtrar por tipo |
 | `NotificationSubtypeId` | `Guid?` | Filtrar por subtipo |
-| `CountryId` | `Guid?` | Filtrar por país |
+| `RegionId` | `Guid?` | Filtrar por región |
 | `ChannelTypeId` | `Guid?` | Filtrar por canal |
 | `DeploymentEnvironmentId` | `Guid?` | Filtrar por entorno de despliegue |
 | `CreationTimeMin` | `DateTime?` | Fecha de creación mínima |

@@ -23,7 +23,7 @@ API logs are useful for auditing, debugging failed requests, and monitoring thro
 Each API log entry captures:
 
 - The full request payload sent to the send endpoint
-- Transaction ID, application, country, language, notification type/subtype
+- Transaction ID, application, region, language, notification type/subtype
 - Source of the request (`Api` or `Platform`)
 - Client IP address and HTTP method
 - Processing status and status detail
@@ -42,7 +42,7 @@ Each API log entry captures:
 | `CorrelationId` | `string?` | Internal correlation ID for tracing |
 | `TransactionId` | `string?` | Transaction ID provided by the client |
 | `ApplicationCode` | `string?` | Application code from the request |
-| `CountryCode` | `string?` | Country code from the request |
+| `RegionCode` | `string?` | Region code from the request |
 | `NotificationTypeCode` | `string?` | Notification type code |
 | `NotificationSubtypeCode` | `string?` | Notification subtype code |
 | `LanguageCode` | `string?` | Language code |
