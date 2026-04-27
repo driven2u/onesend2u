@@ -222,7 +222,9 @@ public class WebhookResponse
     public List<MessageProcessState> Statuses { get; set; }
     public List<string> UserActions { get; set; }
     public bool IsSigningEnabled { get; set; }
-    public string? SigningSecret { get; set; }
+    public string? SigningSecret { get; set; }                // Secreto actual (cifrado en reposo)
+    public bool HasPreviousSigningSecret { get; set; }        // true durante el período de gracia tras una rotación
+    public DateTime? SigningSecretRotatedAt { get; set; }     // Última rotación
     public int SigningSecretGracePeriodMinutes { get; set; }
     public string? ConcurrencyStamp { get; set; }
 }

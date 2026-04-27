@@ -309,7 +309,7 @@ Console.WriteLine($"Mensajes exitosos: {detalle.Notification.NumberOfSuccessMess
 Console.WriteLine($"Aplicación: {detalle.Application?.DisplayName}");
 Console.WriteLine($"Tipo: {detalle.NotificationType?.DisplayName}");
 Console.WriteLine($"Subtipo: {detalle.NotificationSubtype?.DisplayName}");
-Console.WriteLine($"Región: {detalle.Region?.Code}");
+Console.WriteLine($"País: {detalle.Country?.Code}");
 Console.WriteLine($"Entorno: {detalle.DeploymentEnvironment?.Name}");
 
 // ChannelTypes es una lista de LookupItem (puede tener SMS, Email, WhatsApp)
@@ -331,7 +331,7 @@ public class NotificationWithDetailsResponse
     public LookupItem Application { get; set; }
     public LookupItem NotificationType { get; set; }
     public LookupItem NotificationSubtype { get; set; }
-    public LookupItem Region { get; set; }
+    public LookupItem Country { get; set; }   // El request body usa "Region" (código), pero la entidad se almacena como Country/CountryId
     public LookupItem DeploymentEnvironment { get; set; }
     public List<LookupItem> ChannelTypes { get; set; }
 }
@@ -355,7 +355,7 @@ public class NotificationResponse
     public Guid ApplicationId { get; set; }
     public Guid NotificationTypeId { get; set; }
     public Guid NotificationSubtypeId { get; set; }
-    public Guid RegionId { get; set; }
+    public Guid CountryId { get; set; }   // Campo de entidad; el request de envío usa códigos en "Region"
     public DateTime CreationTime { get; set; }
     public string? ConcurrencyStamp { get; set; }
 }
@@ -367,13 +367,13 @@ public class NotificationResponse
 | Parámetro | Tipo | Descripción |
 |---|---|---|
 | `FilterText` | `string?` | Búsqueda libre en múltiples campos |
-| `Source` | `NotificationSource?` | Origen: `CPaaS` o `Api` |
+| `Source` | `NotificationSource?` | Origen: `CPaaS` (1) o `API` (2) |
 | `Language` | `string?` | Código de idioma |
 | `Status` | `NotificationStatus?` | `Sending`, `Success`, `Error` |
 | `ApplicationId` | `Guid?` | Filtrar por aplicación |
 | `NotificationTypeId` | `Guid?` | Filtrar por tipo |
 | `NotificationSubtypeId` | `Guid?` | Filtrar por subtipo |
-| `RegionId` | `Guid?` | Filtrar por región |
+| `CountryId` | `Guid?` | Filtrar por país |
 | `ChannelTypeId` | `Guid?` | Filtrar por canal |
 | `DeploymentEnvironmentId` | `Guid?` | Filtrar por entorno de despliegue |
 | `CreationTimeMin` | `DateTime?` | Fecha de creación mínima |

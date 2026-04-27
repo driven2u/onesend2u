@@ -13,7 +13,7 @@ The **OneSend2U .NET SDK** (`OneSend2U.Sdk`) is a lightweight NuGet package that
 
 ## What the SDK provides
 
-The SDK wraps **41 API endpoints** across 8 sub-clients, all accessible from a single `OneSend2UClient` entry point:
+The SDK wraps **42 API endpoints** across 8 sub-clients, all accessible from a single `OneSend2UClient` entry point:
 
 | Sub-client | Endpoints | Purpose |
 |---|---|---|
@@ -66,7 +66,7 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
     Application         = "myapp",
-    Country             = "us",
+    Region              = "us",
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",

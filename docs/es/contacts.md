@@ -172,6 +172,8 @@ Console.WriteLine($"Grupo creado: {grupo.Id} — {grupo.Name} ({grupo.Code})");
 public class CreateContactsGroupRequest
 {
     public string? Name { get; set; }           // Nombre del grupo. Requerido.
+    public string? Code { get; set; }           // Código del grupo (único por tenant, máx. 10 caracteres). Requerido.
+    public string? Description { get; set; }    // Descripción opcional.
     public List<Guid> ContactIds { get; set; }  // IDs de contactos a incluir.
 }
 ```
@@ -202,7 +204,8 @@ foreach (var grupo in resultado.Items)
 // GetWithDetailsAsync incluye la lista de contactos del grupo
 var grupoConContactos = await client.ContactsGroups.GetWithDetailsAsync(grupoId);
 
-Console.WriteLine($"Grupo: {grupoConContactos.Name}");
+// grupoConContactos.ContactsGroup contiene el grupo; .Contacts la lista de miembros
+Console.WriteLine($"Grupo: {grupoConContactos.ContactsGroup?.Name}");
 Console.WriteLine($"Contactos:");
 foreach (var contacto in grupoConContactos.Contacts)
 {
@@ -260,7 +263,7 @@ var resultado = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId = Guid.NewGuid().ToString(),
     Application = "myapp",
-    Country = "mx",
+    Region = "mx",
     Language = "es",
     NotificationType = "mktg",
     NotificationSubtype = "promo",

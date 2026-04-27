@@ -24,7 +24,7 @@ Each API log entry captures:
 
 - The full request payload sent to the send endpoint
 - Transaction ID, application, region, language, notification type/subtype
-- Source of the request (`Api` or `Platform`)
+- Source of the request (`CPaaS` or `API`)
 - Client IP address and HTTP method
 - Processing status and status detail
 - Timing information: when received, queued, and completed
@@ -46,7 +46,7 @@ Each API log entry captures:
 | `NotificationTypeCode` | `string?` | Notification type code |
 | `NotificationSubtypeCode` | `string?` | Notification subtype code |
 | `LanguageCode` | `string?` | Language code |
-| `Source` | `NotificationSource` | `Api` or `Platform` |
+| `Source` | `NotificationSource` | `CPaaS` (1) or `API` (2) |
 | `Endpoint` | `string?` | API endpoint called |
 | `HttpMethod` | `string?` | HTTP method used |
 | `ClientIp` | `string?` | Client IP address |
@@ -85,8 +85,8 @@ using OneSend2U.Sdk.ApiLogs.Models;
 
 var list = await client.ApiLogs.GetListAsync(new GetApiLogsRequest
 {
-    SkipCount  = 0,
-    MaxResults = 50
+    SkipCount      = 0,
+    MaxResultCount = 50
 });
 
 Console.WriteLine($"Total: {list.TotalCount}");
@@ -114,7 +114,7 @@ Console.WriteLine($"Messages OK:     {log.MessagesSuccess}");
 Console.WriteLine($"Messages Error:  {log.MessagesError}");
 
 foreach (var entry in log.StatusHistory)
-    Console.WriteLine($"  [{entry.At:O}] {entry.Status}");
+    Console.WriteLine($"  [{entry.Timestamp:O}] {entry.Status} — {entry.StatusDetail}  (source: {entry.Source})");
 ```
 {{end}}
 
@@ -125,8 +125,11 @@ foreach (var entry in log.StatusHistory)
 var list = await client.ApiLogs.GetListAsync(new GetApiLogsRequest
 {
     SkipCount       = 0,
-    MaxResults      = 100
-    // Add date range and status filters as supported by GetApiLogsRequest
+    MaxResultCount  = 100,
+    Status          = NotificationApiLogStatus.Error,
+    ReceivedAtMin   = DateTime.UtcNow.AddDays(-1),
+    ReceivedAtMax   = DateTime.UtcNow,
+    Sorting         = "ReceivedAt desc"
 });
 ```
 {{end}}
@@ -143,8 +146,8 @@ do
 {
     var page = await client.ApiLogs.GetListAsync(new GetApiLogsRequest
     {
-        SkipCount  = skip,
-        MaxResults = pageSize
+        SkipCount      = skip,
+        MaxResultCount = pageSize
     });
 
     total = page.TotalCount;

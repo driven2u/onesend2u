@@ -29,7 +29,7 @@ Cada llamada al endpoint `/api/app/notifications/send` genera automáticamente u
 | `NotificationTypeCode` | Tipo de notificación del request |
 | `NotificationSubtypeCode` | Subtipo de notificación del request |
 | `LanguageCode` | Idioma del request |
-| `Source` | Origen (`Api` para llamadas del SDK) |
+| `Source` | Origen: `CPaaS` (1) o `API` (2) — para llamadas del SDK siempre será `API` |
 | `Endpoint` | Endpoint de API que fue llamado |
 | `HttpMethod` | Método HTTP utilizado |
 | `ClientIp` | Dirección IP del cliente |
@@ -96,7 +96,7 @@ Console.WriteLine($"Duración: {log.DurationMs}ms");
 // Historial de estados
 foreach (var entrada in log.StatusHistory)
 {
-    Console.WriteLine($"  {entrada.ChangedAt}: {entrada.Status} — {entrada.Detail}");
+    Console.WriteLine($"  [{entrada.Timestamp:O}] {entrada.Status} — {entrada.StatusDetail}  (source: {entrada.Source})");
 }
 ```
 {{end}}
@@ -113,7 +113,7 @@ foreach (var entrada in log.StatusHistory)
 | `NotificationTypeCode` | `string?` | Filtrar por tipo de notificación |
 | `NotificationSubtypeCode` | `string?` | Filtrar por subtipo |
 | `LanguageCode` | `string?` | Filtrar por idioma |
-| `Source` | `NotificationSource?` | Filtrar por origen (`Api`, `CPaaS`) |
+| `Source` | `NotificationSource?` | Filtrar por origen (`CPaaS`, `API`) |
 | `Status` | `NotificationApiLogStatus?` | Filtrar por estado del log |
 | `StatusDetail` | `string?` | Filtrar por detalle del estado |
 | `ExternalMessageId` | `string?` | Filtrar por ID de mensaje externo |

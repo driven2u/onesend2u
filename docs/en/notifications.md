@@ -286,8 +286,8 @@ using OneSend2U.Sdk.Notifications.Models;
 
 var list = await client.Notifications.GetListAsync(new GetNotificationsRequest
 {
-    SkipCount  = 0,
-    MaxResults = 20
+    SkipCount      = 0,
+    MaxResultCount = 20
 });
 
 Console.WriteLine($"Total: {list.TotalCount}");
@@ -314,7 +314,7 @@ Console.WriteLine($"Status: {notification.Status}");
 
 ### Get notification with navigation properties
 
-Returns the notification along with its related lookup data (application, type, subtype, region, environment, and channel types).
+Returns the notification along with its related lookup data (application, type, subtype, country, environment, and channel types).
 
 `GetWithDetailsAsync` returns `NotificationWithDetailsResponse` with:
 
@@ -324,7 +324,7 @@ Returns the notification along with its related lookup data (application, type, 
 | `Application` | `LookupItem` | Application lookup |
 | `NotificationType` | `LookupItem` | Notification type lookup |
 | `NotificationSubtype` | `LookupItem` | Notification subtype lookup |
-| `Region` | `LookupItem` | Region lookup |
+| `Country` | `LookupItem` | Country lookup. The send request body uses `Region` (string code), but the entity is stored as `Country`/`CountryId`. |
 | `DeploymentEnvironment` | `LookupItem` | Deployment environment lookup |
 | `ChannelTypes` | `List<LookupItem>` | Channel types used |
 
@@ -341,7 +341,7 @@ Returns the notification along with its related lookup data (application, type, 
 | `ApplicationId` | `Guid` | Application ID |
 | `NotificationTypeId` | `Guid` | Notification type ID |
 | `NotificationSubtypeId` | `Guid` | Notification subtype ID |
-| `RegionId` | `Guid` | Region ID |
+| `CountryId` | `Guid` | Country ID (entity-level field; the send request uses `Region` codes) |
 | `CreationTime` | `DateTime` | When the notification was created |
 | `ConcurrencyStamp` | `string?` | Optimistic concurrency stamp |
 
@@ -364,7 +364,7 @@ Console.WriteLine($"Messages sent: {details.Notification.NumberOfSuccessMessages
 
 // Access related lookup data
 Console.WriteLine($"Application: {details.Application?.Name}");
-Console.WriteLine($"Region: {details.Region?.Code}");
+Console.WriteLine($"Country: {details.Country?.Code}");
 Console.WriteLine($"Environment: {details.DeploymentEnvironment?.Name}");
 
 // List the channels used
@@ -380,13 +380,13 @@ foreach (var channel in details.ChannelTypes ?? [])
 | Parameter | Type | Description |
 |---|---|---|
 | `FilterText` | `string?` | Free text search across multiple fields |
-| `Source` | `NotificationSource?` | Origin: `Api` or `Platform` |
+| `Source` | `NotificationSource?` | Origin: `CPaaS` (1) or `API` (2) |
 | `Language` | `string?` | Language code |
 | `Status` | `NotificationStatus?` | `Sending`, `Success`, `Error` |
 | `ApplicationId` | `Guid?` | Filter by application |
 | `NotificationTypeId` | `Guid?` | Filter by notification type |
 | `NotificationSubtypeId` | `Guid?` | Filter by notification subtype |
-| `RegionId` | `Guid?` | Filter by region |
+| `CountryId` | `Guid?` | Filter by country |
 | `ChannelTypeId` | `Guid?` | Filter by channel |
 | `DeploymentEnvironmentId` | `Guid?` | Filter by deployment environment |
 | `CreationTimeMin` | `DateTime?` | Minimum creation date |

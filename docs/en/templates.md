@@ -43,34 +43,46 @@ using OneSend2U.Sdk.Templates.Models;
 
 var list = await client.Templates.GetListAsync(new GetTemplateConfigurationsRequest
 {
-    SkipCount  = 0,
-    MaxResults = 20
+    SkipCount      = 0,
+    MaxResultCount = 20
 });
 
 Console.WriteLine($"Total templates: {list.TotalCount}");
-foreach (var template in list.Items)
-    Console.WriteLine($"{template.Id} — {template.Name}");
+foreach (var item in list.Items)
+{
+    // item is TemplateConfigurationWithDetailsResponse: TemplateConfiguration + LookupItems
+    Console.WriteLine($"{item.TemplateConfiguration?.Id} — {item.TemplateConfiguration?.Name}");
+    Console.WriteLine($"  Provider: {item.Provider?.Name}, Country: {item.Country?.Code}, App: {item.Application?.Code}");
+}
 ```
 {{end}}
 
-## Getting a template by ID
+## Getting a template configuration by ID
+
+`GetAsync(id)` returns the bare `TemplateConfigurationResponse` (no navigation properties).
 
 {{if SDK == "csharp"}}
 ```csharp
-var template = await client.Templates.GetAsync(templateId);
-Console.WriteLine($"Name: {template.Name}");
-Console.WriteLine($"Validation status: {template.ValidationStatus}");
+var config = await client.Templates.GetAsync(templateConfigurationId);
+Console.WriteLine($"Name: {config.Name}");
+Console.WriteLine($"Approval state: {config.ApprovalState}");   // NotRequired, Pending, Approved, ...
+Console.WriteLine($"Active: {config.IsActive}");
+Console.WriteLine($"Linked template ID: {config.TemplateId}");  // null if no template linked yet
 ```
 {{end}}
 
-## Getting a template with details
+## Getting a template configuration with details
 
-Returns the full template configuration including its child template records, buttons, and variable definitions.
+Returns the configuration along with its lookup data (provider, country, application, channel, etc.) and the linked `Template` (single).
 
 {{if SDK == "csharp"}}
 ```csharp
-var details = await client.Templates.GetWithDetailsAsync(templateId);
-Console.WriteLine($"Template count: {details.Templates?.Count}");
+var details = await client.Templates.GetWithDetailsAsync(templateConfigurationId);
+
+Console.WriteLine($"Provider: {details.Provider?.Name}");
+Console.WriteLine($"Country: {details.Country?.Code}");
+Console.WriteLine($"Channel: {details.ChannelType?.Code}");
+Console.WriteLine($"Linked template body: {details.Template?.Body}");
 ```
 {{end}}
 
@@ -127,11 +139,11 @@ foreach (var channel in result.UnconfiguredChannels ?? [])
 ```
 {{end}}
 
-## Previewing a template
+## Previewing a template configuration
 
-Renders the template with sample variable values so you can verify the output before sending. Takes the same lookup fields as `ValidateAsync`.
+Returns sample data you can use to send a test notification from a template configuration: a generated transaction ID, codes, sample recipients, and pre-filled variable values. The method takes the **template configuration ID** (not a full request object).
 
-`GetPreviewAsync` returns `TemplateConfigurationPreviewResponse`:
+`GetPreviewAsync(Guid templateConfigurationId)` returns `TemplateConfigurationPreviewResponse`:
 
 | Field | Type | Description |
 |---|---|---|
@@ -141,29 +153,25 @@ Renders the template with sample variable values so you can verify the output be
 | `RegionCode` | `string` | Region code |
 | `NotificationTypeCode` | `string` | Notification type code |
 | `NotificationSubtypeCode` | `string` | Notification subtype code |
-| `TargetChannels` | `List<PreviewChannel>` | Rendered output per channel |
-| `Recipients` | `List<PreviewRecipient>` | Sample recipients |
-| `TemplateVariables` | `List<PreviewTemplateVariable>` | Key/value pairs used in rendering |
+| `TargetChannels` | `List<PreviewChannel>` | Each item exposes only `Channel` (the channel code) |
+| `Recipients` | `List<PreviewRecipient>` | Each item exposes `Channel` and `Recipient` (sample address) |
+| `TemplateVariables` | `List<PreviewTemplateVariable>` | Each item exposes `Key` and `Value` (sample variable) |
 
 {{if SDK == "csharp"}}
 ```csharp
-var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationValidationRequest
-{
-    ApplicationCode        = "billing",
-    RegionCode             = "us",
-    Language               = "en",
-    NotificationTypeCode   = "trans",
-    NotificationSubtypeCode = "invoice",
-    DeploymentEnvironmentId = deploymentEnvId
-});
+var preview = await client.Templates.GetPreviewAsync(templateConfigurationId);
 
-// The rendered output is split by channel — not a single Body field
-foreach (var channel in preview.TargetChannels ?? [])
+Console.WriteLine($"Transaction ID: {preview.TransactionId}");
+Console.WriteLine($"App: {preview.ApplicationCode} — Region: {preview.RegionCode}");
+
+foreach (var channel in preview.TargetChannels)
     Console.WriteLine($"Channel: {channel.Channel}");
 
-// See which variables were used in the rendering
-foreach (var variable in preview.TemplateVariables ?? [])
-    Console.WriteLine($"{variable.Key} = {variable.Value}");
+foreach (var recipient in preview.Recipients)
+    Console.WriteLine($"  {recipient.Channel}: {recipient.Recipient}");
+
+foreach (var variable in preview.TemplateVariables)
+    Console.WriteLine($"  {variable.Key} = {variable.Value}");
 ```
 {{end}}
 
@@ -179,38 +187,51 @@ Console.WriteLine($"Header type: {template.HeaderType}");
 
 ## Getting template buttons (WhatsApp)
 
+Returns `List<TemplateButtonResponse>`. Each item has `Id`, `Label`, `Value`, `ButtonType`, `Order`, `TemplateId`, `ConcurrencyStamp`, plus a list of variables used in the button.
+
 {{if SDK == "csharp"}}
 ```csharp
 var buttons = await client.Templates.GetTemplateButtonsAsync(templateId);
 foreach (var button in buttons)
-    Console.WriteLine($"Button: {button.Text} ({button.Type})");
+    Console.WriteLine($"Button: {button.Label} ({button.ButtonType}) → {button.Value}");
 ```
 {{end}}
 
 ## Getting template variable definitions
 
-Variable definitions describe the placeholders used in a template, including their name, type, and whether they are required.
+Variable definitions describe the named placeholders a template accepts. Use the returned `Name` values as keys in `SendNotificationRequest.TemplateVariables`.
+
+`GetTemplateVariableDefinitionsAsync(Guid templateId)` returns `List<TemplateVariableDefinitionResponse>` with: `Id`, `Name`, `SampleValue`, `TemplateId`.
 
 {{if SDK == "csharp"}}
 ```csharp
 var definitions = await client.Templates.GetTemplateVariableDefinitionsAsync(templateId);
 foreach (var def in definitions)
-    Console.WriteLine($"{def.Name} ({def.Type}) — Required: {def.IsRequired}");
+    Console.WriteLine($"{def.Name}  (sample: {def.SampleValue})");
 ```
 {{end}}
 
 ## Getting template variables with sections
 
-Returns variable definitions grouped by template section (header, body, footer, buttons).
+Returns variable definitions enriched with the template sections in which each variable is used. Useful when you need to know whether a variable appears in `Header`, `Body`, `Footer`, etc.
+
+`GetTemplateVariablesWithSectionsAsync(Guid templateConfigurationId, Guid providerId)` returns a flat `List<TemplateVariableDefinitionWithSectionsResponse>`. Each item is a `TemplateVariableDefinitionResponse` extended with:
+
+| Field | Type | Description |
+|---|---|---|
+| `Sections` | `List<TemplateSection>?` | Sections where this variable is used (`Subject`, `Header`, `Body`, `Footer`, `Buttons`) |
+| `NotificationVariablesType` | `NotificationVariablesType` | `Template`, `Auto`, `Property`, `TemplateName`, `TemplateLanguage`, `Optional` |
 
 {{if SDK == "csharp"}}
 ```csharp
-var withSections = await client.Templates.GetTemplateVariablesWithSectionsAsync(templateId);
-foreach (var section in withSections)
+var variables = await client.Templates.GetTemplateVariablesWithSectionsAsync(
+    templateConfigurationId,
+    providerId);
+
+foreach (var v in variables)
 {
-    Console.WriteLine($"Section: {section.Section}");
-    foreach (var variable in section.Variables ?? [])
-        Console.WriteLine($"  {variable.Name}");
+    var sections = string.Join(", ", v.Sections ?? []);
+    Console.WriteLine($"{v.Name}  type={v.NotificationVariablesType}  sections=[{sections}]");
 }
 ```
 {{end}}

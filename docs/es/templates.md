@@ -61,9 +61,11 @@ var resultado = await client.Templates.GetListAsync(new GetTemplateConfiguration
     MaxResultCount = 20
 });
 
-foreach (var config in resultado.Items)
+foreach (var item in resultado.Items)
 {
-    Console.WriteLine($"{config.Id} — {config.ValidationStatus}");
+    // item es TemplateConfigurationWithDetailsResponse: TemplateConfiguration + LookupItems
+    Console.WriteLine($"{item.TemplateConfiguration?.Id} — {item.TemplateConfiguration?.Name} — {item.TemplateConfiguration?.ApprovalState}");
+    Console.WriteLine($"  Provider: {item.Provider?.Name}, País: {item.Country?.Code}, App: {item.Application?.Code}");
 }
 ```
 {{end}}
@@ -125,114 +127,91 @@ public class TemplateConfigurationValidationResponse
 ```
 {{end}}
 
-## Vista previa del mensaje
+## Vista previa de configuración de plantilla
 
-Genera el mensaje final con las variables sustituidas, sin enviarlo. Útil para verificar el contenido antes de enviar en producción.
+Devuelve datos de muestra (transaction ID generado, códigos, destinatarios y variables con valores de ejemplo) que puedes usar para enviar una notificación de prueba a partir de una configuración de plantilla. El método recibe directamente el **ID de la configuración** (no un objeto request).
+
+`GetPreviewAsync(Guid templateConfigurationId)` devuelve `TemplateConfigurationPreviewResponse`:
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `TransactionId` | `string` | ID de transacción generado para esta vista previa |
+| `ApplicationCode` | `string` | Código de aplicación |
+| `Language` | `string` | Código de idioma |
+| `RegionCode` | `string` | Código de región |
+| `NotificationTypeCode` / `NotificationSubtypeCode` | `string` | Códigos de tipo/subtipo |
+| `TargetChannels` | `List<PreviewChannel>` | Cada item solo expone `Channel` (código del canal) |
+| `Recipients` | `List<PreviewRecipient>` | Cada item expone `Channel` y `Recipient` (dirección de muestra) |
+| `TemplateVariables` | `List<PreviewTemplateVariable>` | Cada item expone `Key` y `Value` (valor de muestra) |
 
 {{if SDK == "csharp"}}
 ```csharp
-var preview = await client.Templates.GetPreviewAsync(new TemplateConfigurationPreviewRequest
-{
-    ApplicationCode = "myapp",
-    RegionCode = "br",
-    Language = "pt-BR",
-    NotificationTypeCode = "trans",
-    NotificationSubtypeCode = "invoice",
-    DeploymentEnvironmentId = environmentId,
-    TargetChannels = [new TargetChannel { Channel = "sms" }]
-});
+var preview = await client.Templates.GetPreviewAsync(templateConfigurationId);
 
-// Datos de la configuración de plantilla usada
 Console.WriteLine($"Transaction ID: {preview.TransactionId}");
 Console.WriteLine($"App: {preview.ApplicationCode} — Región: {preview.RegionCode}");
 
-// preview.Recipients contiene una lista de destinatarios de muestra
-foreach (var recipient in preview.Recipients)
-    Console.WriteLine($"  Destinatario: {recipient.Channel} — {recipient.Destination}");
-
-// preview.TargetChannels muestra el contenido renderizado por canal
 foreach (var canal in preview.TargetChannels)
-{
     Console.WriteLine($"  Canal: {canal.Channel}");
-    Console.WriteLine($"  Contenido: {canal.RenderedBody}");
-}
 
-// preview.TemplateVariables muestra las variables de plantilla usadas
+foreach (var recipient in preview.Recipients)
+    Console.WriteLine($"  {recipient.Channel}: {recipient.Recipient}");
+
 foreach (var variable in preview.TemplateVariables)
-    Console.WriteLine($"  Variable: {variable.Key} = {variable.Value}");
-```
-{{end}}
-
-### Respuesta de vista previa
-
-{{if SDK == "csharp"}}
-```csharp
-public class TemplateConfigurationPreviewResponse
-{
-    public string? TransactionId { get; set; }
-    public string? ApplicationCode { get; set; }
-    public string? Language { get; set; }
-    public string? RegionCode { get; set; }
-    public string? NotificationTypeCode { get; set; }
-    public string? NotificationSubtypeCode { get; set; }
-    public List<PreviewChannel> TargetChannels { get; set; }        // Canales con contenido renderizado
-    public List<PreviewRecipient> Recipients { get; set; }          // Destinatarios de muestra
-    public List<PreviewTemplateVariable> TemplateVariables { get; set; } // Variables usadas
-}
-
-public class PreviewTemplateVariable
-{
-    public string Key { get; set; }    // Nombre de la variable
-    public string Value { get; set; }  // Valor de ejemplo usado en el preview
-}
+    Console.WriteLine($"  {variable.Key} = {variable.Value}");
 ```
 {{end}}
 
 ## Obtener variables de una plantilla
 
-Para saber qué variables acepta una plantilla antes de enviar:
+Para saber qué variables acepta una plantilla antes de enviar. Los valores de `Name` que devuelve este método son las claves a usar en `SendNotificationRequest.TemplateVariables`.
+
+`GetTemplateVariableDefinitionsAsync(Guid templateId)` devuelve `List<TemplateVariableDefinitionResponse>` con: `Id`, `Name`, `SampleValue`, `TemplateId`.
 
 {{if SDK == "csharp"}}
 ```csharp
-// Por ID de configuración de plantilla
-var variables = await client.Templates.GetTemplateVariableDefinitionsAsync(templateConfigId);
+var variables = await client.Templates.GetTemplateVariableDefinitionsAsync(templateId);
 
 foreach (var variable in variables)
-{
-    Console.WriteLine($"Variable: {variable.Name} — Requerida: {variable.IsRequired}");
-}
+    Console.WriteLine($"Variable: {variable.Name}  (ejemplo: {variable.SampleValue})");
 ```
 {{end}}
 
-## Obtener variables agrupadas por sección
+## Obtener variables con secciones
+
+Devuelve las definiciones de variables enriquecidas con las secciones de la plantilla en las que aparecen (`Header`, `Body`, `Footer`, etc.).
+
+`GetTemplateVariablesWithSectionsAsync(Guid templateConfigurationId, Guid providerId)` devuelve una lista plana `List<TemplateVariableDefinitionWithSectionsResponse>`. Cada item es un `TemplateVariableDefinitionResponse` con dos campos extra:
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `Sections` | `List<TemplateSection>?` | Secciones donde se usa la variable (`Subject`, `Header`, `Body`, `Footer`, `Buttons`) |
+| `NotificationVariablesType` | `NotificationVariablesType` | `Template`, `Auto`, `Property`, `TemplateName`, `TemplateLanguage`, `Optional` |
 
 {{if SDK == "csharp"}}
 ```csharp
-var variablesConSecciones = await client.Templates.GetTemplateVariablesWithSectionsAsync(
-    templateConfigId,
-    notificationSubtypeId);
+var variables = await client.Templates.GetTemplateVariablesWithSectionsAsync(
+    templateConfigurationId,
+    providerId);
 
-foreach (var seccion in variablesConSecciones)
+foreach (var v in variables)
 {
-    Console.WriteLine($"Sección: {seccion.Section}");
-    foreach (var variable in seccion.Variables)
-        Console.WriteLine($"  - {variable.Name}");
+    var secciones = string.Join(", ", v.Sections ?? []);
+    Console.WriteLine($"{v.Name}  tipo={v.NotificationVariablesType}  secciones=[{secciones}]");
 }
 ```
 {{end}}
 
 ## Obtener botones de una plantilla (WhatsApp)
 
-Para plantillas de WhatsApp con botones de respuesta rápida o llamada a acción:
+Devuelve `List<TemplateButtonResponse>`. Cada item tiene `Id`, `Label`, `Value`, `ButtonType`, `Order`, `TemplateId`, `ConcurrencyStamp`, además de la lista de variables que usa el botón.
 
 {{if SDK == "csharp"}}
 ```csharp
 var botones = await client.Templates.GetTemplateButtonsAsync(templateId);
 
 foreach (var boton in botones)
-{
-    Console.WriteLine($"Botón: {boton.Text} ({boton.Type})");
-}
+    Console.WriteLine($"Botón: {boton.Label} ({boton.ButtonType}) → {boton.Value}");
 ```
 {{end}}
 

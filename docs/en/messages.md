@@ -42,11 +42,11 @@ A message transitions through the following states (`MessageProcessState` enum):
 | `Destination` | `string?` | Destination address (phone, email, WhatsApp ID) |
 | `MessageProcessState` | `MessageProcessState?` | Current delivery state |
 | `Language` | `string?` | Language code used |
-| `NotificationSource` | `NotificationSource?` | Origin: `Api` or `Platform` |
+| `NotificationSource` | `NotificationSource?` | Origin: `CPaaS` (1) or `API` (2) |
 | `TemplateVariables` | `string?` | Serialized variable values used |
 | `NotificationId` | `Guid` | Parent notification ID |
 | `ApplicationId` | `Guid` | Application ID |
-| `RegionId` | `Guid` | Region ID |
+| `CountryId` | `Guid` | Country ID (entity-level field; the send request uses `Region` codes) |
 | `ChannelTypeId` | `Guid` | Channel type ID |
 | `NotificationTypeId` | `Guid` | Notification type ID |
 | `NotificationSubtypeId` | `Guid` | Notification subtype ID |
@@ -57,7 +57,7 @@ A message transitions through the following states (`MessageProcessState` enum):
 
 ## Listing messages
 
-`GetListAsync` returns `PagedResult<MessageWithDetailsResponse>`. Each item wraps a `Message` (`MessageResponse`) plus lookup data (region, application, channel type, etc.).
+`GetListAsync` returns `PagedResult<MessageWithDetailsResponse>`. Each item wraps a `Message` (`MessageResponse`) plus lookup data (country, application, channel type, etc.).
 
 {{if SDK == "csharp"}}
 ```csharp
@@ -65,8 +65,8 @@ using OneSend2U.Sdk.Messages.Models;
 
 var list = await client.Messages.GetListAsync(new GetMessagesRequest
 {
-    SkipCount  = 0,
-    MaxResults = 50
+    SkipCount      = 0,
+    MaxResultCount = 50
 });
 
 Console.WriteLine($"Total: {list.TotalCount}");
@@ -91,7 +91,7 @@ foreach (var item in list.Items)
 | `MessageProcessState` | `MessageProcessState?` | `null` | Filter by delivery state |
 | `Language` | `string?` | `null` | Filter by language code |
 | `NotificationSource` | `NotificationSource?` | `null` | Filter by origin: `CPaaS` or `API` |
-| `RegionId` | `Guid?` | `null` | Filter by region |
+| `CountryId` | `Guid?` | `null` | Filter by country |
 | `ApplicationId` | `Guid?` | `null` | Filter by application |
 | `ChannelTypeId` | `Guid?` | `null` | Filter by channel type |
 | `NotificationTypeId` | `Guid?` | `null` | Filter by notification type |
@@ -131,7 +131,7 @@ Console.WriteLine($"Created: {message.CreationTime:O}");
 
 ## Getting a message with navigation properties
 
-Returns a `MessageWithDetailsResponse` that wraps the base `MessageResponse` plus lookup data (region, application, channel type, provider, notification type, etc.).
+Returns a `MessageWithDetailsResponse` that wraps the base `MessageResponse` plus lookup data (country, application, channel type, provider, notification type, etc.).
 
 {{if SDK == "csharp"}}
 ```csharp
@@ -143,7 +143,7 @@ Console.WriteLine($"Destination: {details.Message.Destination}");
 
 // Lookup data is available as named properties
 Console.WriteLine($"Application: {details.Application?.Name}");
-Console.WriteLine($"Region: {details.Region?.Code}");
+Console.WriteLine($"Country: {details.Country?.Code}");
 Console.WriteLine($"Channel: {details.ChannelType?.DisplayName}");
 ```
 {{end}}
@@ -156,14 +156,14 @@ All list methods return `PagedResult<T>`:
 ```csharp
 var page1 = await client.Messages.GetListAsync(new GetMessagesRequest
 {
-    SkipCount  = 0,
-    MaxResults = 20
+    SkipCount      = 0,
+    MaxResultCount = 20
 });
 
 var page2 = await client.Messages.GetListAsync(new GetMessagesRequest
 {
-    SkipCount  = 20,
-    MaxResults = 20
+    SkipCount      = 20,
+    MaxResultCount = 20
 });
 
 Console.WriteLine($"Total messages: {page1.TotalCount}"); // TotalCount is the same across pages

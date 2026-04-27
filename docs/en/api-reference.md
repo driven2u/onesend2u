@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for all 41 SDK endpoints, enum definitions, and rate limit headers.
+Complete reference for all 42 SDK endpoints, enum definitions, and rate limit headers.
 
 ## Endpoint table
 

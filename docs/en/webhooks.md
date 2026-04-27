@@ -128,7 +128,9 @@ Console.WriteLine($"Signing enabled: {webhook.IsSigningEnabled}");
 | `Statuses` | `List<MessageProcessState>` | Triggering message states |
 | `UserActions` | `List<string>` | Triggering user action identifiers |
 | `IsSigningEnabled` | `bool` | Whether HMAC signing is enabled |
-| `SigningSecret` | `string?` | Current signing secret |
+| `SigningSecret` | `string?` | Current signing secret (encrypted at rest; the cleartext is returned only here so you can store it) |
+| `HasPreviousSigningSecret` | `bool` | `true` while the previous secret is still valid (during the rotation grace period) |
+| `SigningSecretRotatedAt` | `DateTime?` | Timestamp of the last `RotateSigningSecretAsync` call |
 | `SigningSecretGracePeriodMinutes` | `int` | Grace period for secret rotation |
 | `ConcurrencyStamp` | `string?` | Optimistic concurrency stamp |
 

@@ -125,7 +125,7 @@ public class MessageWithDetailsResponse
     public LookupItem ChannelType { get; set; }
     public LookupItem NotificationType { get; set; }
     public LookupItem NotificationSubtype { get; set; }
-    public LookupItem Region { get; set; }
+    public LookupItem Country { get; set; }   // Entidad almacenada como Country/CountryId; el request de envío usa códigos en "Region"
     public LookupItem Provider { get; set; }
     public LookupItem DeploymentEnvironment { get; set; }
 }
@@ -144,7 +144,7 @@ public class MessageResponse
     public MessageProcessState? MessageProcessState { get; set; }
     public string? Language { get; set; }
     public NotificationSource? NotificationSource { get; set; }
-    public Guid RegionId { get; set; }
+    public Guid CountryId { get; set; }   // Campo de entidad; el request de envío usa códigos en "Region"
     public Guid ApplicationId { get; set; }
     public Guid ChannelTypeId { get; set; }
     public Guid NotificationTypeId { get; set; }
@@ -167,8 +167,8 @@ public class MessageResponse
 | `Destination` | `string?` | Filtrar por dirección destino |
 | `MessageProcessState` | `MessageProcessState?` | Estado del mensaje |
 | `Language` | `string?` | Código de idioma |
-| `NotificationSource` | `NotificationSource?` | Origen: `CPaaS` o `Api` |
-| `RegionId` | `Guid?` | Filtrar por región |
+| `NotificationSource` | `NotificationSource?` | Origen: `CPaaS` (1) o `API` (2) |
+| `CountryId` | `Guid?` | Filtrar por país |
 | `ApplicationId` | `Guid?` | Filtrar por aplicación |
 | `ChannelTypeId` | `Guid?` | Filtrar por canal (SMS, Email, WhatsApp) |
 | `NotificationTypeId` | `Guid?` | Filtrar por tipo de notificación |

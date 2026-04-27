@@ -1,6 +1,6 @@
 # Referencia de API
 
-Tabla completa de los 41 endpoints disponibles en el SDK, agrupados por sub-cliente. URL base: `https://api.onesend2u.com`.
+Tabla completa de los 42 endpoints disponibles en el SDK, agrupados por sub-cliente. URL base: `https://api.onesend2u.com`.
 
 ## Endpoints por sub-cliente
 
@@ -72,7 +72,7 @@ Tabla completa de los 41 endpoints disponibles en el SDK, agrupados por sub-clie
 | `client.ApiLogs.GetListAsync(request)` | GET | `/api/app/notification-api-logs` |
 | `client.ApiLogs.GetAsync(id)` | GET | `/api/app/notification-api-logs/{id}` |
 
-**Permisos requeridos:** `Cpaas.ApiLogs`
+**Permisos requeridos:** `Cpaas.NotificationApiLogs`
 
 ---
 
@@ -148,7 +148,7 @@ Tabla completa de los 41 endpoints disponibles en el SDK, agrupados por sub-clie
 | Valor | Valor numérico | Descripción |
 |---|---|---|
 | `CPaaS` | 1 | Originado desde el portal web |
-| `Api` | 2 | Originado desde llamada a la API (SDK) |
+| `API` | 2 | Originado desde llamada a la API (SDK) |
 
 ### `NotificationApiLogStatus`
 

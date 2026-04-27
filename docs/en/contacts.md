@@ -66,8 +66,8 @@ Console.WriteLine($"Created contact: {contact.Id} — {contact.DisplayName}");
 ```csharp
 var list = await client.Contacts.GetListAsync(new GetContactsRequest
 {
-    SkipCount  = 0,
-    MaxResults = 50
+    SkipCount      = 0,
+    MaxResultCount = 50
 });
 
 Console.WriteLine($"Total: {list.TotalCount}");
@@ -153,8 +153,8 @@ Console.WriteLine($"Group created: {group.Id} — {group.Name} ({group.Code})");
 ```csharp
 var list = await client.ContactsGroups.GetListAsync(new GetContactsGroupsRequest
 {
-    SkipCount  = 0,
-    MaxResults = 20
+    SkipCount      = 0,
+    MaxResultCount = 20
 });
 
 foreach (var group in list.Items)
@@ -168,7 +168,8 @@ foreach (var group in list.Items)
 ```csharp
 var details = await client.ContactsGroups.GetWithDetailsAsync(groupId);
 
-Console.WriteLine($"Group: {details.Name}");
+// details.ContactsGroup holds the group itself; details.Contacts is the member list
+Console.WriteLine($"Group: {details.ContactsGroup?.Name}");
 foreach (var contact in details.Contacts ?? [])
     Console.WriteLine($"  Member: {contact.DisplayName}");
 ```
