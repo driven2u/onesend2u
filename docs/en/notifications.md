@@ -39,8 +39,7 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 | `Attachments` | `List<NotificationAttachment>` | No | Base64-encoded file attachments |
 | `ExternalMessageId` | `string?` | No | External correlation ID |
 | `ExternalSequenceNumber` | `string?` | No | External ordering sequence number |
-| `SenderAddress` | `string?` | No | Sender address override (Email only). Domain must be Verified for the resolved Connection. See [Sender override](#sender-override). |
-| `SenderName` | `string?` | No | Sender display name override (Email + SMS). See [Sender override](#sender-override). |
+| `SenderOverrides` | `Dictionary<string, SenderOverride>?` | No | Per-channel sender overrides. Keys: `"sms"`, `"email"` (case-insensitive). See [Sender override](#sender-override). |
 
 ### NotificationRecipient
 
@@ -195,15 +194,17 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 
 ### Sender override
 
-The default sender per channel is configured at the application level (Communication Channels tab). For one-off requests you can override it with the `SenderAddress` and `SenderName` fields. Per-channel policies apply:
+The default sender per channel is configured at the application level (Communication Channels tab). For one-off requests you can override it with the **`SenderOverrides`** map — keyed by channel code (`sms`, `email`, case-insensitive). Each entry carries an optional `Address` and/or `Name`. Per-channel rules:
 
-| Channel | `SenderAddress` | `SenderName` |
+| Channel | `Address` | `Name` |
 |---|---|---|
-| Email | Allowed. The domain must be Verified in SenderDomain for the connection's external account; otherwise rejected with `Cpaas:ApplicationChannel:00003`. | Allowed. |
-| SMS | Rejected with `Cpaas:SenderOverride:00001`. | Allowed (best-effort). Applied only when the destination country supports alphanumeric senders; silently discarded otherwise — the message is still delivered using the phone-number sender. |
-| WhatsApp | Rejected with `Cpaas:SenderOverride:00001`. | Rejected with `Cpaas:SenderOverride:00002`. |
+| Email | Allowed. The domain must be Verified in SenderDomain for the connection's external account; otherwise rejected with `Cpaas:ApplicationChannel:00003`. The local-part is free. | Allowed (free text). |
+| SMS | Allowed. Must belong to the connection's available sender list (`Connection.Senders.Where(IsAvailableForApp)`); otherwise rejected with `Cpaas:SenderOverride:00011`. | Allowed (best-effort). Applied only when the destination country supports alphanumeric senders; silently discarded otherwise — the message is still delivered using the phone-number sender. |
+| WhatsApp | The whole `whatsapp` entry — even empty — is rejected with `Cpaas:SenderOverride:00001`. The sender is fixed by the connection's WABA (verified phone + display name). | Same as `Address` — rejected. |
 
-The override applies to the whole notification (all recipients in the request). Resolution priority (most specific wins): API request → Template configuration → Application channel default → Connection default sender.
+An entry with both `Address` and `Name` null/whitespace is rejected with `Cpaas:SenderOverride:00012` (`SenderOverrideEmpty`).
+
+The override applies to the whole notification (all recipients in the request). Resolution priority (most specific wins): API request → Application channel default → Connection default sender.
 
 {{if SDK == "csharp"}}
 ```csharp
@@ -218,14 +219,20 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
     NotificationSubtype = "reset_pwd",
     TargetChannels      = [new TargetChannel { Channel = "email" }],
     Recipients          = [new NotificationRecipient { Channel = "email", Recipient = "jane@example.com" }],
-    SenderAddress       = "security@your-verified-domain.com",
-    SenderName          = "Acme Security",
+    SenderOverrides     = new()
+    {
+        ["email"] = new SenderOverride
+        {
+            Address = "security@your-verified-domain.com",
+            Name    = "Acme Security"
+        }
+    },
     TemplateVariables   = [new Dictionary<string, string> { ["reset_link"] = "https://..." }]
 });
 ```
 
 ```csharp
-// SMS — only the display name can be overridden; SenderAddress is rejected for SMS
+// SMS — pick a specific sender from the connection's available list and apply a display name
 var response = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId       = Guid.NewGuid().ToString(),
@@ -236,7 +243,14 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
     NotificationSubtype = "otp",
     TargetChannels      = [new TargetChannel { Channel = "sms" }],
     Recipients          = [new NotificationRecipient { Channel = "sms", Recipient = "+15550001234" }],
-    SenderName          = "Acme",
+    SenderOverrides     = new()
+    {
+        ["sms"] = new SenderOverride
+        {
+            Address = "+34915794174",   // must exist in Connection.Senders[].Address
+            Name    = "Acme"            // best-effort: dropped on countries that don't support alpha
+        }
+    },
     TemplateVariables   = [new Dictionary<string, string> { ["code"] = "482910" }]
 });
 ```
@@ -244,10 +258,28 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 
 | Error code | When |
 |---|---|
-| `Cpaas:SenderOverride:00001` | Sent `SenderAddress` to a channel that does not allow it (SMS, WhatsApp). |
-| `Cpaas:SenderOverride:00002` | Sent `SenderName` to a channel that does not allow it (WhatsApp). |
-| `Cpaas:ApplicationChannel:00003` | Sent an Email `SenderAddress` whose domain is not Verified for the resolved Connection. |
+| `Cpaas:SenderOverride:00001` | Sent a `whatsapp` entry — WhatsApp does not allow per-request overrides. |
+| `Cpaas:SenderOverride:00011` | Sent an SMS `Address` not present in the connection's available sender list. |
+| `Cpaas:SenderOverride:00012` | Sent an entry with both `Address` and `Name` empty. |
+| `Cpaas:SenderOverride:00013` | Used a channel key other than `sms` / `email` / `whatsapp`. |
+| `Cpaas:ApplicationChannel:00003` | Sent an Email `Address` whose domain is not Verified for the resolved Connection. |
 | `Cpaas:Integration:00116` | Sent a malformed Email address. |
+
+#### Migration from SDK 1.x
+
+`SDK 1.x` exposed flat `SenderAddress` / `SenderName` fields on `SendNotificationRequest`. SDK `2.0.0` replaces them with `SenderOverrides`:
+
+```csharp
+// SDK 1.x
+req.SenderAddress = "security@verified.com";
+req.SenderName    = "Acme Security";
+
+// SDK 2.0+
+req.SenderOverrides = new()
+{
+    ["email"] = new SenderOverride { Address = "security@verified.com", Name = "Acme Security" }
+};
+```
 
 ### Sending with attachments (Email)
 

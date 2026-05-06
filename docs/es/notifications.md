@@ -63,34 +63,79 @@ public class SendNotificationRequest
     // Número de secuencia externo.
     public string? ExternalSequenceNumber { get; set; }
 
-    // Override de dirección del remitente (solo Email). El dominio debe estar Verificado en
-    // SenderDomain para la cuenta externa de la Connection resuelta. Ver "Override de remitente".
-    public string? SenderAddress { get; set; }
+    // Overrides de remitente por canal. Claves admitidas: "sms", "email" (case-insensitive).
+    // Cada entrada lleva opcionalmente Address y/o Name. Ver "Override de remitente".
+    public Dictionary<string, SenderOverride>? SenderOverrides { get; set; }
+}
 
-    // Override de nombre del remitente (Email + SMS). Ver "Override de remitente".
-    public string? SenderName { get; set; }
+public class SenderOverride
+{
+    public string? Address { get; set; }
+    public string? Name    { get; set; }
 }
 ```
 {{end}}
 
 ### Override de remitente
 
-El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con `SenderAddress` y `SenderName`. Políticas por canal:
+El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con el mapa **`SenderOverrides`**, indexado por código de canal (`sms`, `email`, case-insensitive). Cada entrada lleva opcionalmente `Address` y/o `Name`. Reglas por canal:
 
-| Canal | `SenderAddress` | `SenderName` |
+| Canal | `Address` | `Name` |
 |---|---|---|
-| Email | Permitido. El dominio debe estar Verificado en SenderDomain para la cuenta externa de la Connection. En caso contrario se rechaza con `Cpaas:ApplicationChannel:00003`. | Permitido. |
-| SMS | Rechazado con `Cpaas:SenderOverride:00001`. | Permitido (best-effort). Solo se aplica si el país destino soporta remitentes alfanuméricos; si no, se descarta silenciosamente y el mensaje se envía con el número de teléfono. |
-| WhatsApp | Rechazado con `Cpaas:SenderOverride:00001`. | Rechazado con `Cpaas:SenderOverride:00002`. |
+| Email | Permitido. El dominio debe estar Verificado en SenderDomain para la cuenta externa de la Connection. En caso contrario se rechaza con `Cpaas:ApplicationChannel:00003`. La parte local (antes del `@`) es libre. | Permitido (texto libre). |
+| SMS | Permitido. Debe pertenecer a la lista de senders disponibles de la Connection (`Connection.Senders.Where(IsAvailableForApp)`). En caso contrario se rechaza con `Cpaas:SenderOverride:00011`. | Permitido (best-effort). Solo se aplica si el país destino soporta remitentes alfanuméricos; si no, se descarta silenciosamente y el mensaje se envía con el número de teléfono. |
+| WhatsApp | La entrada `whatsapp` — incluso vacía — se rechaza con `Cpaas:SenderOverride:00001`. El sender está fijado por la WABA de la Connection (número verificado + display name). | Igual que `Address` — rechazado. |
 
-El override se aplica a toda la notificación (todos los destinatarios). Prioridad de resolución (más específico gana): petición API → configuración de plantilla → canal de la aplicación → remitente por defecto de la Connection.
+Una entrada con `Address` y `Name` ambos null/blanco se rechaza con `Cpaas:SenderOverride:00012` (`SenderOverrideEmpty`).
+
+El override se aplica a toda la notificación (todos los destinatarios). Prioridad de resolución (más específico gana): petición API → canal de la aplicación → remitente por defecto de la Connection.
+
+```csharp
+// Email — override del From para esta petición
+req.SenderOverrides = new()
+{
+    ["email"] = new SenderOverride
+    {
+        Address = "security@tu-dominio-verificado.com",
+        Name    = "Acme Security"
+    }
+};
+
+// SMS — elige un sender concreto de la Connection y aplica un display name (best-effort)
+req.SenderOverrides = new()
+{
+    ["sms"] = new SenderOverride
+    {
+        Address = "+34915794174",   // debe existir en Connection.Senders
+        Name    = "Acme"            // descartado en países sin alpha sender
+    }
+};
+```
 
 | Código de error | Cuándo |
 |---|---|
-| `Cpaas:SenderOverride:00001` | `SenderAddress` enviado a un canal que no lo permite (SMS, WhatsApp). |
-| `Cpaas:SenderOverride:00002` | `SenderName` enviado a un canal que no lo permite (WhatsApp). |
-| `Cpaas:ApplicationChannel:00003` | `SenderAddress` de Email cuyo dominio no está Verificado para la Connection resuelta. |
+| `Cpaas:SenderOverride:00001` | Se envió una entrada `whatsapp` — WhatsApp no admite override por petición. |
+| `Cpaas:SenderOverride:00011` | El `Address` de SMS no está en la lista de senders disponibles de la Connection. |
+| `Cpaas:SenderOverride:00012` | Entrada con `Address` y `Name` ambos vacíos. |
+| `Cpaas:SenderOverride:00013` | Clave de canal distinta de `sms` / `email` / `whatsapp`. |
+| `Cpaas:ApplicationChannel:00003` | `Address` de Email cuyo dominio no está Verificado para la Connection resuelta. |
 | `Cpaas:Integration:00116` | Formato de email inválido. |
+
+#### Migración desde SDK 1.x
+
+`SDK 1.x` exponía los campos planos `SenderAddress` / `SenderName` directamente en `SendNotificationRequest`. SDK `2.0.0` los reemplaza por `SenderOverrides`:
+
+```csharp
+// SDK 1.x
+req.SenderAddress = "security@verificado.com";
+req.SenderName    = "Acme Security";
+
+// SDK 2.0+
+req.SenderOverrides = new()
+{
+    ["email"] = new SenderOverride { Address = "security@verificado.com", Name = "Acme Security" }
+};
+```
 
 ### ContactGroupTarget
 
