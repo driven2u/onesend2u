@@ -63,8 +63,9 @@ public class SendNotificationRequest
     // Número de secuencia externo.
     public string? ExternalSequenceNumber { get; set; }
 
-    // Overrides de remitente por canal. Claves admitidas: "sms", "email" (case-insensitive).
-    // Cada entrada lleva opcionalmente Address y/o Name. Ver "Override de remitente".
+    // Overrides de remitente por canal. Claves admitidas: "sms", "email", "whatsapp"
+    // (case-insensitive). Cada entrada lleva opcionalmente Address y/o Name.
+    // Ver "Override de remitente".
     public Dictionary<string, SenderOverride>? SenderOverrides { get; set; }
 }
 
@@ -78,13 +79,13 @@ public class SenderOverride
 
 ### Override de remitente
 
-El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con el mapa **`SenderOverrides`**, indexado por código de canal (`sms`, `email`, case-insensitive). Cada entrada lleva opcionalmente `Address` y/o `Name`. Reglas por canal:
+El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con el mapa **`SenderOverrides`**, indexado por código de canal (`sms`, `email`, `whatsapp`, case-insensitive). Cada entrada lleva opcionalmente `Address` y/o `Name`. Reglas por canal:
 
 | Canal | `Address` | `Name` |
 |---|---|---|
 | Email | Permitido. El dominio debe estar Verificado en SenderDomain para la cuenta externa de la Connection. En caso contrario se rechaza con `Cpaas:ApplicationChannel:00003`. La parte local (antes del `@`) es libre. | Permitido (texto libre). |
 | SMS | Permitido. Debe pertenecer a la lista de senders disponibles de la Connection (`Connection.Senders.Where(IsAvailableForApp)`). En caso contrario se rechaza con `Cpaas:SenderOverride:00011`. | Permitido (best-effort). Solo se aplica si el país destino soporta remitentes alfanuméricos; si no, se descarta silenciosamente y el mensaje se envía con el número de teléfono. |
-| WhatsApp | La entrada `whatsapp` — incluso vacía — se rechaza con `Cpaas:SenderOverride:00001`. El sender está fijado por la WABA de la Connection (número verificado + display name). | Igual que `Address` — rechazado. |
+| WhatsApp | Permitido. Mismo control de pertenencia que SMS; en caso contrario se rechaza con `Cpaas:SenderOverride:00011`. | Rechazado con `Cpaas:SenderOverride:00001`. La Cloud API de WhatsApp asocia el nombre mostrado al número verificado, por lo que no es posible sobrescribirlo en runtime. |
 
 Una entrada con `Address` y `Name` ambos null/blanco se rechaza con `Cpaas:SenderOverride:00012` (`SenderOverrideEmpty`).
 

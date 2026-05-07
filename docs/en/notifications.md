@@ -39,7 +39,7 @@ The `client.Notifications` sub-client covers sending notifications and querying 
 | `Attachments` | `List<NotificationAttachment>` | No | Base64-encoded file attachments |
 | `ExternalMessageId` | `string?` | No | External correlation ID |
 | `ExternalSequenceNumber` | `string?` | No | External ordering sequence number |
-| `SenderOverrides` | `Dictionary<string, SenderOverride>?` | No | Per-channel sender overrides. Keys: `"sms"`, `"email"` (case-insensitive). See [Sender override](#sender-override). |
+| `SenderOverrides` | `Dictionary<string, SenderOverride>?` | No | Per-channel sender overrides. Keys: `"sms"`, `"email"`, `"whatsapp"` (case-insensitive). See [Sender override](#sender-override). |
 
 ### NotificationRecipient
 
@@ -194,13 +194,13 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 
 ### Sender override
 
-The default sender per channel is configured at the application level (Communication Channels tab). For one-off requests you can override it with the **`SenderOverrides`** map — keyed by channel code (`sms`, `email`, case-insensitive). Each entry carries an optional `Address` and/or `Name`. Per-channel rules:
+The default sender per channel is configured at the application level (Communication Channels tab). For one-off requests you can override it with the **`SenderOverrides`** map — keyed by channel code (`sms`, `email`, `whatsapp`, case-insensitive). Each entry carries an optional `Address` and/or `Name`. Per-channel rules:
 
 | Channel | `Address` | `Name` |
 |---|---|---|
 | Email | Allowed. The domain must be Verified in SenderDomain for the connection's external account; otherwise rejected with `Cpaas:ApplicationChannel:00003`. The local-part is free. | Allowed (free text). |
 | SMS | Allowed. Must belong to the connection's available sender list (`Connection.Senders.Where(IsAvailableForApp)`); otherwise rejected with `Cpaas:SenderOverride:00011`. | Allowed (best-effort). Applied only when the destination country supports alphanumeric senders; silently discarded otherwise — the message is still delivered using the phone-number sender. |
-| WhatsApp | The whole `whatsapp` entry — even empty — is rejected with `Cpaas:SenderOverride:00001`. The sender is fixed by the connection's WABA (verified phone + display name). | Same as `Address` — rejected. |
+| WhatsApp | Allowed. Same list-membership check as SMS; otherwise rejected with `Cpaas:SenderOverride:00011`. | Rejected with `Cpaas:SenderOverride:00001`. WhatsApp Cloud API ties the displayed name to the verified phone number, so a runtime override is impossible. |
 
 An entry with both `Address` and `Name` null/whitespace is rejected with `Cpaas:SenderOverride:00012` (`SenderOverrideEmpty`).
 
