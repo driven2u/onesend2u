@@ -112,6 +112,7 @@ Validation checks whether a template configuration is complete for the given com
 
 {{if SDK == "csharp"}}
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
 using OneSend2U.Sdk.Templates.Models;
 
 var result = await client.Templates.ValidateAsync(new TemplateConfigurationValidationRequest
@@ -123,7 +124,7 @@ var result = await client.Templates.ValidateAsync(new TemplateConfigurationValid
     NotificationSubtypeCode = "invoice",
     DeploymentEnvironmentId = deploymentEnvId,
     // Optionally limit to specific channels:
-    TargetChannels = [new TargetChannel { Channel = "sms" }, new TargetChannel { Channel = "email" }]
+    TargetChannels = [new TargetChannel { Channel = Channel.Sms }, new TargetChannel { Channel = Channel.Email }]
 });
 
 // Status tells you at a glance whether you can send
@@ -153,8 +154,8 @@ Returns sample data you can use to send a test notification from a template conf
 | `RegionCode` | `string` | Region code |
 | `NotificationTypeCode` | `string` | Notification type code |
 | `NotificationSubtypeCode` | `string` | Notification subtype code |
-| `TargetChannels` | `List<PreviewChannel>` | Each item exposes only `Channel` (the channel code) |
-| `Recipients` | `List<PreviewRecipient>` | Each item exposes `Channel` and `Recipient` (sample address) |
+| `TargetChannels` | `List<PreviewChannel>` | Each item exposes only `Channel` (`Channel?` enum — see [Channels](notifications.md#channels)) |
+| `Recipients` | `List<PreviewRecipient>` | Each item exposes `Channel` (`Channel?` enum) and `Recipient` (sample address) |
 | `TemplateVariables` | `List<PreviewTemplateVariable>` | Each item exposes `Key` and `Value` (sample variable) |
 
 {{if SDK == "csharp"}}

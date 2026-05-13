@@ -18,6 +18,45 @@ El sub-cliente `client.Notifications` cubre 4 endpoints para enviar y consultar 
 | `GetAsync(id)` | GET | Obtiene una notificación por ID |
 | `GetWithDetailsAsync(id)` | GET | Obtiene una notificación con todas las propiedades de navegación |
 
+## Canales
+
+Los canales se representan mediante el enum tipado `Channel` en `OneSend2U.Sdk.Models.Enums`:
+
+| Miembro del enum | Código en el cable |
+|---|---|
+| `Channel.Sms` | `sms` |
+| `Channel.Email` | `email` |
+| `Channel.WhatsApp` | `whatsapp` |
+
+El enum se (de)serializa a/desde los códigos en minúsculas mostrados arriba (case-insensitive al leer), por lo que el JSON intercambiado con la API no cambia. Usa los miembros del enum allí donde aparezca una propiedad `Channel?`:
+
+{{if SDK == "csharp"}}
+```csharp
+using OneSend2U.Sdk.Models.Enums;
+using OneSend2U.Sdk.Notifications.Models;
+
+new NotificationRecipient { Channel = Channel.Sms, Recipient = "+34915794174" };
+new TargetChannel        { Channel = Channel.Email };
+new ContactGroupTarget   { Code = "VIP", Channel = Channel.WhatsApp };
+```
+{{end}}
+
+Para claves de diccionario (p. ej. `SenderOverrides`), la clave sigue siendo `string` — `System.Text.Json` no serializa claves enum. Usa las constantes `ChannelCodes` para mantener consistencia con el código en el cable:
+
+{{if SDK == "csharp"}}
+```csharp
+using OneSend2U.Sdk.Models.Enums;
+
+SenderOverrides = new Dictionary<string, SenderOverride>
+{
+    [ChannelCodes.Sms]   = new() { Address = "+34915794174" },
+    [ChannelCodes.Email] = new() { Address = "security@verificado.com" }
+};
+```
+{{end}}
+
+`ChannelCodes` expone además helpers: `ChannelCodes.ToWireCode(Channel)` para query strings y `ChannelCodes.FromWireCode(string?)` para parsear códigos entrantes (case-insensitive).
+
 ## Modelo de solicitud de envío
 
 {{if SDK == "csharp"}}
@@ -63,9 +102,9 @@ public class SendNotificationRequest
     // Número de secuencia externo.
     public string? ExternalSequenceNumber { get; set; }
 
-    // Overrides de remitente por canal. Claves admitidas: "sms", "email", "whatsapp"
-    // (case-insensitive). Cada entrada lleva opcionalmente Address y/o Name.
-    // Ver "Override de remitente".
+    // Overrides de remitente por canal. Claves admitidas: ChannelCodes.Sms,
+    // ChannelCodes.Email, ChannelCodes.WhatsApp (string, case-insensitive en el cable).
+    // Cada entrada lleva opcionalmente Address y/o Name. Ver "Override de remitente".
     public Dictionary<string, SenderOverride>? SenderOverrides { get; set; }
 }
 
@@ -79,7 +118,7 @@ public class SenderOverride
 
 ### Override de remitente
 
-El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con el mapa **`SenderOverrides`**, indexado por código de canal (`sms`, `email`, `whatsapp`, case-insensitive). Cada entrada lleva opcionalmente `Address` y/o `Name`. Reglas por canal:
+El remitente por defecto se configura a nivel de aplicación (pestaña Communication Channels). Para una petición concreta puedes sobrescribirlo con el mapa **`SenderOverrides`**, indexado por código de canal (`ChannelCodes.Sms`, `ChannelCodes.Email`, `ChannelCodes.WhatsApp`; el formato en el cable es el código en minúsculas, case-insensitive al leer). Cada entrada lleva opcionalmente `Address` y/o `Name`. Reglas por canal:
 
 | Canal | `Address` | `Name` |
 |---|---|---|
@@ -92,10 +131,12 @@ Una entrada con `Address` y `Name` ambos null/blanco se rechaza con `Cpaas:Sende
 El override se aplica a toda la notificación (todos los destinatarios). Prioridad de resolución (más específico gana): petición API → canal de la aplicación → remitente por defecto de la Connection.
 
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 // Email — override del From para esta petición
 req.SenderOverrides = new()
 {
-    ["email"] = new SenderOverride
+    [ChannelCodes.Email] = new SenderOverride
     {
         Address = "security@tu-dominio-verificado.com",
         Name    = "Acme Security"
@@ -105,7 +146,7 @@ req.SenderOverrides = new()
 // SMS — elige un sender concreto de la Connection y aplica un display name (best-effort)
 req.SenderOverrides = new()
 {
-    ["sms"] = new SenderOverride
+    [ChannelCodes.Sms] = new SenderOverride
     {
         Address = "+34915794174",   // debe existir en Connection.Senders
         Name    = "Acme"            // descartado en países sin alpha sender
@@ -127,6 +168,8 @@ req.SenderOverrides = new()
 `SDK 1.x` exponía los campos planos `SenderAddress` / `SenderName` directamente en `SendNotificationRequest`. SDK `2.0.0` los reemplaza por `SenderOverrides`:
 
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 // SDK 1.x
 req.SenderAddress = "security@verificado.com";
 req.SenderName    = "Acme Security";
@@ -134,29 +177,33 @@ req.SenderName    = "Acme Security";
 // SDK 2.0+
 req.SenderOverrides = new()
 {
-    ["email"] = new SenderOverride { Address = "security@verificado.com", Name = "Acme Security" }
+    [ChannelCodes.Email] = new SenderOverride { Address = "security@verificado.com", Name = "Acme Security" }
 };
 ```
+
+> **Nota SDK 2.1:** las propiedades `Channel` (`NotificationRecipient.Channel`, `TargetChannel.Channel`, `ContactGroupTarget.Channel`) ahora son el enum tipado `Channel?` en lugar de `string?`. El formato en el cable no cambia. Las claves de `SenderOverrides` siguen siendo `string` (limitación de System.Text.Json); usa las constantes `ChannelCodes` en lugar de literales de cadena.
 
 ### ContactGroupTarget
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
 | `Code` | `string` | Sí | Código del grupo de contacto a resolver (máx. 10 caracteres) |
-| `Channel` | `string?` | No | Filtro de canal (`"SMS"`, `"EMAIL"`, `"WHATSAPP"`). Si se omite, se usan todos los `TargetChannels`. |
+| `Channel` | `Channel?` | No | Filtro de canal — ver [Canales](#canales). Si se omite, se usan todos los `TargetChannels`. |
 
 ### Canales disponibles
 
-| Valor | Canal |
-|---|---|
-| `"sms"` | Mensaje de texto SMS |
-| `"email"` | Correo electrónico |
-| `"whatsapp"` | WhatsApp Business |
+| Miembro del enum | Código en el cable | Canal |
+|---|---|---|
+| `Channel.Sms` | `sms` | Mensaje de texto SMS |
+| `Channel.Email` | `email` | Correo electrónico |
+| `Channel.WhatsApp` | `whatsapp` | WhatsApp Business |
 
 ## Enviar una notificación
 
 {{if SDK == "csharp"}}
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 var result = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId = Guid.NewGuid().ToString(),
@@ -167,8 +214,8 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
     NotificationSubtype = "welcome",
     Recipients =
     [
-        new NotificationRecipient { Channel = "sms",   Recipient = "+5215512345678" },
-        new NotificationRecipient { Channel = "email",  Recipient = "usuario@ejemplo.com" }
+        new NotificationRecipient { Channel = Channel.Sms,   Recipient = "+5215512345678" },
+        new NotificationRecipient { Channel = Channel.Email, Recipient = "usuario@ejemplo.com" }
     ],
     TemplateVariables =
     [
@@ -200,7 +247,7 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
-    TargetChannels      = [new TargetChannel { Channel = "email" }],
+    TargetChannels      = [new TargetChannel { Channel = Channel.Email }],
     ContactGroupCodes   =
     [
         new ContactGroupTarget { Code = "VIP" }  // todos los TargetChannels
@@ -232,17 +279,17 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
     NotificationSubtype = "invoice",
     TargetChannels      =
     [
-        new TargetChannel { Channel = "email" },
-        new TargetChannel { Channel = "sms" }
+        new TargetChannel { Channel = Channel.Email },
+        new TargetChannel { Channel = Channel.Sms }
     ],
     Recipients =
     [
-        new NotificationRecipient { Channel = "email", Recipient = "cfo@example.com" }
+        new NotificationRecipient { Channel = Channel.Email, Recipient = "cfo@example.com" }
     ],
     ContactGroupCodes =
     [
-        new ContactGroupTarget { Code = "FINANCE", Channel = "EMAIL" },  // solo email
-        new ContactGroupTarget { Code = "MGMT" }                         // todos los canales
+        new ContactGroupTarget { Code = "FINANCE", Channel = Channel.Email },  // solo email
+        new ContactGroupTarget { Code = "MGMT" }                               // todos los canales
     ],
     TemplateVariables =
     [
@@ -277,6 +324,8 @@ public class SendNotificationResponse
 
 {{if SDK == "csharp"}}
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 var result = await client.Notifications.SendAsync(new SendNotificationRequest
 {
     TransactionId = Guid.NewGuid().ToString(),
@@ -285,8 +334,8 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
     Language = "es",
     NotificationType = "trans",
     NotificationSubtype = "invoice",
-    TargetChannels = [new TargetChannel { Channel = "email" }],
-    Recipients = [new NotificationRecipient { Channel = "email", Recipient = "cliente@empresa.com" }],
+    TargetChannels = [new TargetChannel { Channel = Channel.Email }],
+    Recipients = [new NotificationRecipient { Channel = Channel.Email, Recipient = "cliente@empresa.com" }],
     TemplateVariables = [new Dictionary<string, string> { { "numero_factura", "F-0001" } }],
     Attachments =
     [

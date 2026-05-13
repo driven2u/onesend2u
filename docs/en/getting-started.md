@@ -99,6 +99,7 @@ The following example shows a complete service that sends an SMS notification:
 {{if SDK == "csharp"}}
 ```csharp
 using OneSend2U.Sdk;
+using OneSend2U.Sdk.Models.Enums;
 using OneSend2U.Sdk.Notifications.Models;
 
 public class InvoiceNotificationService(OneSend2UClient client)
@@ -120,7 +121,7 @@ public class InvoiceNotificationService(OneSend2UClient client)
             [
                 new NotificationRecipient
                 {
-                    Channel   = "sms",
+                    Channel   = Channel.Sms,
                     Recipient = phoneNumber
                 }
             ],

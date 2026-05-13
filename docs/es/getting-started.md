@@ -96,6 +96,7 @@ El siguiente ejemplo envía un SMS con variables de plantilla:
 {{if SDK == "csharp"}}
 ```csharp
 using OneSend2U.Sdk;
+using OneSend2U.Sdk.Models.Enums;
 using OneSend2U.Sdk.Notifications.Models;
 using OneSend2U.Sdk.Exceptions;
 
@@ -117,7 +118,7 @@ public class NotificationService(OneSend2UClient client)
                 [
                     new NotificationRecipient
                     {
-                        Channel = "sms",
+                        Channel = Channel.Sms,
                         Recipient = phoneNumber
                     }
                 ],

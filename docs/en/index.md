@@ -50,6 +50,8 @@ The SDK authenticates using API Keys. Every request sends two HTTP headers:
 
 {{if SDK == "csharp"}}
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 // 1. Install
 // dotnet add package OneSend2U.Sdk
 
@@ -70,7 +72,7 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
     Language            = "en",
     NotificationType    = "trans",
     NotificationSubtype = "invoice",
-    Recipients          = [new NotificationRecipient { Channel = "sms", Recipient = "+15550001234" }],
+    Recipients          = [new NotificationRecipient { Channel = Channel.Sms, Recipient = "+15550001234" }],
     TemplateVariables   = [new Dictionary<string, string> { ["customer_name"] = "Jane Doe" }]
 });
 ```

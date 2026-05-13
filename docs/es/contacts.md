@@ -245,6 +245,8 @@ Los grupos de contactos se pueden usar como base para envíos masivos. Una vez q
 
 {{if SDK == "csharp"}}
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 // Obtener contactos del grupo
 var grupo = await client.ContactsGroups.GetWithDetailsAsync(grupoId);
 
@@ -253,7 +255,7 @@ var destinatarios = grupo.Contacts
     .Where(c => !string.IsNullOrEmpty(c.Phone))
     .Select(c => new NotificationRecipient
     {
-        Channel = "sms",
+        Channel = Channel.Sms,
         Recipient = c.Phone
     })
     .ToList();

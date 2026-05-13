@@ -63,6 +63,7 @@ Thrown by the SDK before making an HTTP call when required fields are missing or
 {{if SDK == "csharp"}}
 ```csharp
 using OneSend2U.Sdk.Exceptions;
+using OneSend2U.Sdk.Models.Enums;
 using OneSend2U.Sdk.Notifications.Models;
 
 try
@@ -75,7 +76,7 @@ try
         Language            = "en",
         NotificationType    = "trans",
         NotificationSubtype = "invoice",
-        Recipients          = [new NotificationRecipient { Channel = "sms", Recipient = "+15550001234" }]
+        Recipients          = [new NotificationRecipient { Channel = Channel.Sms, Recipient = "+15550001234" }]
     });
 
     Console.WriteLine($"Sent: {response.Status}");

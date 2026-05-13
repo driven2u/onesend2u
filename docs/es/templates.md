@@ -76,6 +76,8 @@ Antes de enviar, puedes verificar que existe una plantilla configurada para los 
 
 {{if SDK == "csharp"}}
 ```csharp
+using OneSend2U.Sdk.Models.Enums;
+
 var validacion = await client.Templates.ValidateAsync(new TemplateConfigurationValidationRequest
 {
     // Códigos de la aplicación, región, idioma, tipo y subtipo (todos requeridos)
@@ -86,7 +88,7 @@ var validacion = await client.Templates.ValidateAsync(new TemplateConfigurationV
     NotificationSubtypeCode = "invoice",
     DeploymentEnvironmentId = environmentId,
     // Canales a validar; si está vacío valida todos los configurados
-    TargetChannels = [new TargetChannel { Channel = "sms" }, new TargetChannel { Channel = "email" }]
+    TargetChannels = [new TargetChannel { Channel = Channel.Sms }, new TargetChannel { Channel = Channel.Email }]
 });
 
 // Status: None = ninguno configurado, Partial = algunos, All = todos configurados
@@ -140,8 +142,8 @@ Devuelve datos de muestra (transaction ID generado, códigos, destinatarios y va
 | `Language` | `string` | Código de idioma |
 | `RegionCode` | `string` | Código de región |
 | `NotificationTypeCode` / `NotificationSubtypeCode` | `string` | Códigos de tipo/subtipo |
-| `TargetChannels` | `List<PreviewChannel>` | Cada item solo expone `Channel` (código del canal) |
-| `Recipients` | `List<PreviewRecipient>` | Cada item expone `Channel` y `Recipient` (dirección de muestra) |
+| `TargetChannels` | `List<PreviewChannel>` | Cada item solo expone `Channel` (enum `Channel?` — ver [Canales](notifications.md#canales)) |
+| `Recipients` | `List<PreviewRecipient>` | Cada item expone `Channel` (enum `Channel?`) y `Recipient` (dirección de muestra) |
 | `TemplateVariables` | `List<PreviewTemplateVariable>` | Cada item expone `Key` y `Value` (valor de muestra) |
 
 {{if SDK == "csharp"}}
