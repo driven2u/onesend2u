@@ -75,6 +75,7 @@ SenderOverrides = new Dictionary<string, SenderOverride>
 | `ContactGroupCodes` | `List<ContactGroupTarget>?` | Conditional | Contact group codes to resolve into recipients. At least one of `Recipients` or `ContactGroupCodes` is required. |
 | `TargetChannels` | `List<TargetChannel>` | No | Limit delivery to specific channels. If empty, all channels configured for the template are used. |
 | `TemplateVariables` | `List<Dictionary<string, string>>` | No | Variable substitutions per recipient |
+| `Objects` | `Dictionary<string, object>?` | No | Structured data for email templates — nested objects and arrays. See [Structured data](#structured-data). |
 | `Attachments` | `List<NotificationAttachment>` | No | Base64-encoded file attachments |
 | `ExternalMessageId` | `string?` | No | External correlation ID |
 | `ExternalSequenceNumber` | `string?` | No | External ordering sequence number |
@@ -355,6 +356,59 @@ var response = await client.Notifications.SendAsync(new SendNotificationRequest
 });
 ```
 {{end}}
+
+## Structured data
+
+`TemplateVariables` carries flat values. When an email needs data with shape — an order with its lines, a
+user with an address — send it in `Objects`.
+
+```csharp
+var request = new SendNotificationRequest
+{
+    // ... application, region, language, type, subtype, recipients ...
+    TemplateVariables = [new Dictionary<string, string> { ["customerName"] = "Alice" }],
+    Objects = new Dictionary<string, object>
+    {
+        ["user"]  = new { name = "Alice", isPremium = true, address = new { city = "Madrid" } },
+        ["order"] = new
+        {
+            total = 150.00m,
+            lines = new[]
+            {
+                new { productName = "T-Shirt", quantity = 2, unitPrice = 25.00m },
+                new { productName = "Mug",     quantity = 1, unitPrice = 10.00m }
+            }
+        }
+    }
+};
+```
+
+The template reads it with dot notation, loops and conditions:
+
+```
+Hello {{ customerName }},
+
+{{ for line in order.lines }}
+  {{ line.quantity }} x {{ line.productName }} — {{ line.unitPrice | math.format "0.00" }}
+{{ end }}
+
+Total: {{ order.total | math.format "0.00" }}
+
+{{ if user.isPremium }}Thank you for being a premium member.{{ end }}
+```
+
+Worth knowing:
+
+- **Email only.** SMS and WhatsApp are rendered by the provider from positional parameters, so they ignore
+  this section.
+- **A root key of `Objects` satisfies a template variable of the same name**, so a template that expects
+  `order` is served by `Objects["order"]` without also listing it in `TemplateVariables`.
+- **On a name collision the flat variable wins**, which keeps templates written before this feature
+  behaving exactly as they did.
+- **Values are HTML-escaped**, so content coming from your systems cannot inject markup into the email.
+- **A missing field renders as empty** rather than failing the send: `{{ user.address.postcode }}` on a
+  payload without a postcode yields nothing. Use `{{ user.nickname ?? "there" }}` to supply a default.
+- The payload is capped at 64 KB.
 
 ## Querying notifications
 

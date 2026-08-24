@@ -93,6 +93,9 @@ public class SendNotificationRequest
     // Variables de sustitución de plantilla. Una entrada por destinatario.
     public List<Dictionary<string, string>> TemplateVariables { get; set; }
 
+    // Datos estructurados para plantillas de email: objetos anidados y arrays. Opcional.
+    public Dictionary<string, object>? Objects { get; set; }
+
     // Archivos adjuntos (contenido en Base64). Solo para canales que lo soporten (Email).
     public List<NotificationAttachment> Attachments { get; set; }
 
@@ -348,6 +351,61 @@ var result = await client.Notifications.SendAsync(new SendNotificationRequest
 });
 ```
 {{end}}
+
+## Datos estructurados
+
+`TemplateVariables` transporta valores planos. Cuando un email necesita datos con forma —un pedido con sus
+líneas, un usuario con su dirección— se envían en `Objects`.
+
+```csharp
+var request = new SendNotificationRequest
+{
+    // ... application, region, language, type, subtype, recipients ...
+    TemplateVariables = [new Dictionary<string, string> { ["customerName"] = "Alicia" }],
+    Objects = new Dictionary<string, object>
+    {
+        ["user"]  = new { name = "Alicia", isPremium = true, address = new { city = "Madrid" } },
+        ["order"] = new
+        {
+            total = 150.00m,
+            lines = new[]
+            {
+                new { productName = "Camiseta", quantity = 2, unitPrice = 25.00m },
+                new { productName = "Taza",     quantity = 1, unitPrice = 10.00m }
+            }
+        }
+    }
+};
+```
+
+La plantilla los lee con notación de punto, bucles y condiciones:
+
+```
+Hola {{ customerName }},
+
+{{ for line in order.lines }}
+  {{ line.quantity }} x {{ line.productName }} — {{ line.unitPrice | math.format "0.00" }}
+{{ end }}
+
+Total: {{ order.total | math.format "0.00" }}
+
+{{ if user.isPremium }}Gracias por ser miembro premium.{{ end }}
+```
+
+Conviene saber:
+
+- **Solo email.** SMS y WhatsApp los renderiza el proveedor a partir de parámetros posicionales, así que
+  ignoran esta sección.
+- **Una clave raíz de `Objects` satisface una variable de plantilla con ese mismo nombre**, así que una
+  plantilla que espera `order` queda servida con `Objects["order"]` sin repetirla en `TemplateVariables`.
+- **Si un nombre coincide en ambos, gana la variable plana**, de modo que las plantillas escritas antes de
+  esta funcionalidad se comportan exactamente igual que antes.
+- **Los valores se escapan como HTML**, así que el contenido que venga de tus sistemas no puede inyectar
+  marcado en el email.
+- **Un campo ausente se renderiza vacío** en lugar de fallar el envío: `{{ user.address.postcode }}` sobre
+  un payload sin código postal no produce nada. Usa `{{ user.nickname ?? "hola" }}` para dar un valor por
+  defecto.
+- El payload está limitado a 64 KB.
 
 ## Consultar notificaciones
 
